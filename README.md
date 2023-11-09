@@ -2,15 +2,63 @@
 
 # Members of parliament
 
+## Lookup by Constituency
+
 Lookup from postal code to MP and constituency is provided online at
 https://www.ourcommons.ca/Members/en/search/csv?searchText=v5w%203h8&parliament=all.
 
 - We can cache this lookup over time so we don't hit that site very often.
 
-Once we have this information we can lookup their Hill and Constituency Office
-addresses in [this file](data/addresses-members-of-parliament.html)
+## Riding to Members
 
-- though it needs to converted from HTML to JSON.
+There is XML data source captured from
+https://www.ourcommons.ca/en/open-data#CurrentMembers into
+parliament-members.xml in the following format.
+
+<MemberOfParliament>
+<PersonShortHonorific />
+<PersonOfficialFirstName>Ziad</PersonOfficialFirstName>
+<PersonOfficialLastName>Aboultaif</PersonOfficialLastName>
+<ConstituencyName>Edmonton Manning</ConstituencyName>
+<ConstituencyProvinceTerritoryName>Alberta</ConstituencyProvinceTerritoryName>
+<CaucusShortName>Conservative</CaucusShortName>
+<FromDateTime>2021-09-20T00:00:00</FromDateTime>
+<ToDateTime xsi:nil="true" />
+</MemberOfParliament>
+
+## Member Names to Addresses
+
+Once we have a member's name we can lookup their Hill and Constituency Office
+addresses in [this file](data/addresses-members-of-parliament.html) extracted
+from
+[Addresses for Current Members of Parliament](https://www.ourcommons.ca/Members/en/addresses)
+and cached temporarily as JSON
+
+## Other data per member
+
+### Email addresses
+
+Email addresses are not included address information above but can be pulled
+from individual pages like:
+
+https://www.ourcommons.ca/Members/en/constituencies/brome-missisquoi(652)
+
+There's a single div on that page that contains:
+
+- Email pascale.st-onge@parl.gc.ca
+- Preferred Language French
+
+### Area, Population and Votes
+
+From that page there's also
+[Electoral District Profile](http://www.elections.ca/scripts/vis/Profile?L=e&ED=24016&EV=99&EV_TYPE=6&PC=&Prov=&MapID=&QID=-1)
+that includes the following:
+
+- Area: 3,035 km2
+- Population**: 113,913
+- Number of electors on list****: 94,728
+
+## Bills and Votes
 
 Bills under consideration and finished (passed, abandonned etc) are at
 https://www.parl.ca/legisinfo/en/legislation-at-a-glance which can be exported
