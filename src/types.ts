@@ -1,12 +1,17 @@
 export type Legislator = {
+    id: string,
     firstName: string,
     lastName: string,
     isCurrent: boolean,
     addresses: Array<TypedAddress>
+    province: string
+    constituency: string
+    party: string
+    fromDate: string
 }
 export type TypedAddress = {
     type: string,
-    address: string | null,
+    physical: string | null,
     phone: string,
-    fax: string
+    fax: string | null
 }

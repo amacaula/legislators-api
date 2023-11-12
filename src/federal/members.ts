@@ -1,26 +1,80 @@
 import { parse, HTMLElement, Node, TextNode } from 'node-html-parser';
 const fs = require("fs");
 import { Legislator, TypedAddress } from '../types';
+const { XMLParser } = require("fast-xml-parser");
 
-type DocumentCursor = {
+// For iterating over children nodes of an HTMLElement
+type HTMLDocumentCursor = {
     nodes: Array<Node>,
     index: number
 }
 
+type XMLMemberOfParliament = {
+    CaucusShortName: string // example 'Conservative'
+    ConstituencyName: string // example 'Edmonton Manning'
+    ConstituencyProvinceTerritoryName: string // example 'Alberta'
+    FromDateTime: string // example '2021-09-20T00:00:00'
+    PersonOfficialFirstName: string // example 'Ziad'
+    PersonOfficialLastName: string // example 'Aboultaif'
+    PersonShortHonorific: string // usually empty
+}
+
 const STOP_TAGS = ["H3", "DIV", "P"];
+
+// TODO replace with proper logging
 const logger = {
     log: (s: string) => console.log(s),
     warn: (s: string) => console.warn(s),
     error: (s: string) => console.error(s)
 }
 
+/**
+ * Reads all general data about legislators from the following sources:
+ * - data/addresses-members-of-parliament.html
+ * - data/parliament-members.html
+ * @returns 
+ */
 export function getAllLegislators(): Array<Legislator> {
+
+    // Process the HTML file containing the list of all legislators addresses
     const html = fs.readFileSync("data/addresses-members-of-parliament.html", "utf8");
     const root = parse(html);
     const blocks = root.querySelectorAll("div").filter(a => a.childNodes.length === 13);
+    let legislatorsById = new Map<string, Legislator>();
+    blocks.map(htmlBlockToLegislator).forEach((l: Legislator) => legislatorsById.set(l.id, l));
 
-    const addrs = blocks.map(htmlBlockToLegislator);
-    return addrs;
+    // Process XML file containing 
+    const xml = fs.readFileSync("data/parliament-members.xml", "utf8");
+    const parser = new XMLParser();
+    let xmlData = parser.parse(xml);
+    xmlData.ArrayOfMemberOfParliament.MemberOfParliament.forEach((mp: XMLMemberOfParliament) => {
+        mergeInConstituencyData(legislatorsById, mp);
+    });
+
+    return Array.from(legislatorsById.values());
+}
+
+function mergeInConstituencyData(legislatorsById: Map<string, Legislator>, xmlData: XMLMemberOfParliament) {
+    let id = `${xmlData.PersonOfficialLastName}, ${xmlData.PersonOfficialFirstName}`;
+    let leg = legislatorsById.get(id);
+    if (leg) {
+        let leg = legislatorsById.get(id) as Legislator;
+        leg.constituency = xmlData.ConstituencyName;
+        leg.party = xmlData.CaucusShortName;
+        leg.province = xmlData.ConstituencyProvinceTerritoryName;
+        leg.fromDate = xmlData.FromDateTime.substring(0, 10);
+    } else {
+        logger.warn(`mergeInConstituencyData: UNKNOWN legislator id = ${id}`)
+    }
+}
+
+function defaultLegislator(first: string, last: string) {
+    return {
+        id: `${last}, ${first}`, firstName: first, lastName: last,
+        isCurrent: true, fromDate: "",
+        province: "", constituency: "", party: "",
+        addresses: [],
+    };
 }
 
 /**
@@ -31,8 +85,10 @@ export function getAllLegislators(): Array<Legislator> {
 function htmlBlockToLegislator(b: HTMLElement): Legislator {
     let name = b.childNodes[1].text;
     logger.log(`processing name = ${name}`);
-    let rtn: Legislator = { name: name, addresses: [] };
-    let cursor: DocumentCursor = { nodes: b.childNodes, index: 0 };
+    let [last, first] = name.split(", ");
+
+    let rtn: Legislator = defaultLegislator(first, last);
+    let cursor: HTMLDocumentCursor = { nodes: b.childNodes, index: 0 };
     while (cursor.index < cursor.nodes.length) {
         let type = extractAddressType(cursor);
         if (type === null) break; // no more addresses
@@ -42,10 +98,10 @@ function htmlBlockToLegislator(b: HTMLElement): Legislator {
             cursor = { nodes: cursor.nodes[cursor.index].childNodes, index: 0 };
         }
 
-        let a: TypedAddress = { type: type, address: null, phone: "", fax: "" };
+        let a: TypedAddress = { type: type, physical: null, phone: "missing", fax: null };
 
         let addr = extractMultilineAddress(cursor);
-        if (addr.length > 0) a.address = addr;;
+        if (addr.length > 0) a.physical = addr;;
 
         let otherProperties = extractNamedAttributes(cursor);
         a = { ...a, ...otherProperties };
@@ -63,7 +119,7 @@ function htmlBlockToLegislator(b: HTMLElement): Legislator {
  * @param cursor 
  * @returns 
  */
-function extractAddressType(cursor: DocumentCursor): string | null {
+function extractAddressType(cursor: HTMLDocumentCursor): string | null {
     let nodes = cursor.nodes;
     let allowedTypes: any = { Hill: "central", Constituency: "local" };
     // iterate until we find the node were looking for or fail
@@ -93,7 +149,7 @@ function extractAddressType(cursor: DocumentCursor): string | null {
  * @param cursor 
  * @returns 
  */
-function extractNamedAttributes(cursor: DocumentCursor): any {
+function extractNamedAttributes(cursor: HTMLDocumentCursor): any {
     // TODO make static
     let nameMap = new Map(Object.entries({ Telephone: "phone", Fax: "fax" }));
     const allowedNames = Array.from(nameMap.keys());
@@ -123,7 +179,7 @@ function extractNamedAttributes(cursor: DocumentCursor): any {
  * @param cursor 
  * @returns 
  */
-function extractMultilineAddress(cursor: DocumentCursor): string {
+function extractMultilineAddress(cursor: HTMLDocumentCursor): string {
     let rtn = "";
     while (cursor.index < cursor.nodes.length) {
         let n = cursor.nodes[cursor.index];
@@ -143,7 +199,7 @@ function extractMultilineAddress(cursor: DocumentCursor): string {
  * @param cursor
  * @returns 
  */
-function eatWhitespace(cursor: DocumentCursor) {
+function eatWhitespace(cursor: HTMLDocumentCursor) {
     while (true) {
         let n = cursor.nodes[cursor.index];
         if (n.toString().trim().length != 0) break;
