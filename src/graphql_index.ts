@@ -14,9 +14,12 @@ const typeDefs = `#graphql
     id: String!
     firstName: String!
     lastName: String!
-    fromDate: String
+    province: String!
+    constituency: String!
+    party: String!
+    fromDate: String!
     toDate: String
-    isCurrent: Boolean
+    isCurrent: Boolean!
     email: String
     urls: [String] # TODO is there a URL type?
     addresses: [TypedAddress!]!

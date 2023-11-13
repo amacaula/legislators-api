@@ -2,6 +2,18 @@
 
 # Members of parliament
 
+A full list of members of parliament can be retrieved from the
+[search page](https://www.ourcommons.ca/members/en/search) which contains a tile
+for each member of parliament - including a link to an "contact" page for each
+member. An example is:
+
+[Ziad Aboultaif](https://www.ourcommons.ca/members/en/ziad-aboultaif(89156)) -
+note the 5 digit number at the end is needed and is available in the link on the
+original page. Each tile starts with
+
+- div class="ce-mip-mp-tile-container " id="mp-tile-person-id-89156"
+- a class="ce-mip-mp-tile" href="/members/en/ziad-aboultaif(89156)"
+
 ## Lookup by Constituency
 
 Lookup from postal code to MP and constituency is provided online at
@@ -32,7 +44,7 @@ Once we have a member's name we can lookup their Hill and Constituency Office
 addresses in [this file](data/addresses-members-of-parliament.html) extracted
 from
 [Addresses for Current Members of Parliament](https://www.ourcommons.ca/Members/en/addresses)
-and cached temporarily as JSON
+and cached temporarily as JSON.
 
 ## Other data per member
 
