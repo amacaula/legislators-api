@@ -12,6 +12,7 @@ export type Legislator = {
     constituency: string
     party: string
     fromDate: string
+    email: string
     urls: LegislatorURLs
 }
 export type TypedAddress = {

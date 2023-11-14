@@ -4,6 +4,9 @@ import { Legislator, LegislatorURLs, TypedAddress } from '../types';
 const { XMLParser } = require("fast-xml-parser");
 const fetch = require('node-fetch');
 
+// TODO find out why have 275 instead of 338 legislators
+// TODO parse toll free phone numbers for those that have them
+
 // ------------------------- types and globals -------------------------
 
 // For iterating over children nodes of an HTMLElement
@@ -40,7 +43,7 @@ function defaultLegislator(first: string, last: string): Legislator {
         id: "", nameId: makeNameId(first, last), firstName: first, lastName: last, honorific: "",
         isCurrent: true, fromDate: "",
         province: "", constituency: "", party: "",
-        addresses: [], urls: {} as LegislatorURLs
+        addresses: [], email: "", urls: {} as LegislatorURLs
     } as Legislator;
 }
 
@@ -80,7 +83,13 @@ export async function getAllLegislators(): Promise<Array<Legislator>> {
         if (a.getAttribute("href")) mergeInContactLink(a.getAttribute("href") as string, legislatorsByNameId)
     });
 
-    await Promise.all([fetchAndMergeDataFromContactLink(legislatorsByNameId.get("aboultaif, ziad") as Legislator)]);
+    // fetch contact data for each legislator in parallel
+    let promises = Array<Promise<void>>();
+    legislatorsByNameId.forEach((leg, nameId) => {
+        promises.push(fetchAndMergeDataFromContactLink(leg));
+    });
+    let results = await Promise.allSettled(promises);
+    logger.log(`contact data fetched with ${results.filter(r => r.status === "rejected").length} failures`);
 
     return Array.from(legislatorsByNameId.values());
 }
@@ -160,7 +169,7 @@ async function fetchAndMergeDataFromContactLink(leg: Legislator): Promise<void> 
     return fetch(contactURL)
         .then((res: any) => {
             if (res.ok) {
-                return res.text()
+                return res.text();
             } else {
                 console.warn(`fetchAndMergeDataFromContactLink: ${contactURL} -> HTTP error: ${res.status}`);
                 return
@@ -168,6 +177,23 @@ async function fetchAndMergeDataFromContactLink(leg: Legislator): Promise<void> 
         })
         .then((body: any) => {
             console.log(body)
+            const root = parse(body);
+            const blocks = root.querySelectorAll("div").filter(a => {
+                // div contains h4 element with text "Email"
+                return a.querySelector("h4")?.text.includes("Email")
+            }).forEach(block => {
+                // then extract the contents of the two links in the div
+                block.querySelectorAll("a").forEach(a => {
+                    const href = a.getAttribute("href");
+                    if (!href) return;
+                    console.log(href);
+                    if (href.includes("mailto")) {
+                        leg.email = href.substring(7); // drop the mailto:
+                    } else if (href.includes("http")) {
+                        leg.urls["website"] = href;
+                    }
+                });
+            });
         });
 }
 

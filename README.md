@@ -48,7 +48,7 @@ and cached temporarily as JSON.
 
 ## Other data per member
 
-### Email addresses
+### Email and website addresses
 
 Email addresses are not included address information above but can be pulled
 from individual pages like:
@@ -59,6 +59,15 @@ There's a single div on that page that contains:
 
 - Email pascale.st-onge@parl.gc.ca
 - Preferred Language French
+
+There's also a page about each member of parliament that contains a "Contact
+Details" tab which contains
+
+- div class="container"
+- h4 Email
+- p a href="mailto:ziad.aboultaif@parl.gc.ca" ziad.aboultaif@parl.gc.ca /a /p
+- h4 Website
+- p a href="http://ziadaboultaif.ca" http://ziadaboultaif.ca /a /p
 
 ### Area, Population and Votes
 
