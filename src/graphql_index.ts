@@ -45,7 +45,7 @@ const resolvers = {
   Query: {
     legislators: function (parent: any, args: any, contextValue: any, info: any): Array<Legislator> {
       // filter if requested
-      let results = (args.filter) ? legislators.filter((l: Legislator) => l.id.toLowerCase().includes(args.filter.toLowerCase())) : legislators;
+      let results = (args.filter) ? legislators.filter((l: Legislator) => l.nameId.includes(args.filter.toLowerCase())) : legislators;
       // page if requested
       args.start = args.start || 0;
       return args.count ? results.slice(args.start, args.start + args.count) : results;

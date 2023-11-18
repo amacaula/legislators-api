@@ -5,14 +5,28 @@
 A full list of members of parliament can be retrieved from the
 [search page](https://www.ourcommons.ca/members/en/search) which contains a tile
 for each member of parliament - including a link to an "contact" page for each
-member. An example is:
+member. An example for
+[Ziad Aboultaif](https://www.ourcommons.ca/members/en/ziad-aboultaif(89156)) is:
 
-[Ziad Aboultaif](https://www.ourcommons.ca/members/en/ziad-aboultaif(89156)) -
-note the 5 digit number at the end is needed and is available in the link on the
-original page. Each tile starts with
+```<div class="ce-mip-mp-tile-container " id="mp-tile-person-id-89156">
+<a class="ce-mip-mp-tile" href="/members/en/ziad-aboultaif(89156)">
+    <div class="ce-mip-flex-tile">
+        <div class="ce-mip-mp-picture-container">
+            <img class="ce-mip-mp-picture visible-lg visible-md img-fluid" src="/Content/Parliamentarians/Images/OfficialMPPhotos/44/AboultaifZiad_CPC.jpg" loading="lazy"
+                 alt="Photo - Ziad Aboultaif - Click to open the Member of Parliament profile">
+        </div>
+        <div class="ce-mip-tile-text">
+            <div class="ce-mip-tile-top">
+                <div class="ce-mip-mp-honourable"></div>
+                <div class="ce-mip-mp-name">Ziad Aboultaif</div>
+```
 
-- div class="ce-mip-mp-tile-container " id="mp-tile-person-id-89156"
-- a class="ce-mip-mp-tile" href="/members/en/ziad-aboultaif(89156)"
+Notes:
+
+- the 5 digit identifier at the end of the first line is needed and is available
+  in the link on the original page.
+- Its not safe to process the name with "\-" in it. Need to pull the name from
+  the last line
 
 ## Lookup by Constituency
 
@@ -63,11 +77,13 @@ There's a single div on that page that contains:
 There's also a page about each member of parliament that contains a "Contact
 Details" tab which contains
 
-- div class="container"
-- h4 Email
-- p a href="mailto:ziad.aboultaif@parl.gc.ca" ziad.aboultaif@parl.gc.ca /a /p
-- h4 Website
-- p a href="http://ziadaboultaif.ca" http://ziadaboultaif.ca /a /p
+```<div class="container">
+        <h4>Email</h4>
+        <p><a href="mailto:ziad.aboultaif@parl.gc.ca">ziad.aboultaif@parl.gc.ca</a></p>
+
+        <h4>Website</h4>
+            <p><a href="http://ziadaboultaif.ca">http://ziadaboultaif.ca</a> </p>
+```
 
 ### Area, Population and Votes
 
@@ -104,3 +120,6 @@ Refugee Protection Regulations"
 Its final vote with all members votes is available at
 https://www.ourcommons.ca/Members/en/votes/44/1/387. Note each vote has its own
 id - this was 387
+
+```
+```

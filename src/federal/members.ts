@@ -1,11 +1,15 @@
 import { parse, HTMLElement, Node, TextNode } from 'node-html-parser';
 const fs = require("fs");
 import { Legislator, LegislatorURLs, TypedAddress } from '../types';
+import { query } from 'express';
 const { XMLParser } = require("fast-xml-parser");
 const fetch = require('node-fetch');
 
 // TODO find out why have 275 instead of 338 legislators
 // TODO parse toll free phone numbers for those that have them
+// TODO switch to xray for HTML scraping - handles classes properly
+// TODO keep track of all source document URLs
+// TODO separate cature and consume types
 
 // ------------------------- types and globals -------------------------
 
@@ -29,14 +33,9 @@ const HOUSE_OF_COMMONS_PHYSICAL_ADDRESS = "House of Commons\nOttawa, Ontario\nCa
 
 const STOP_TAGS = ["H3", "DIV", "P"];
 
-// TODO replace with proper logging
-const logger = {
-    log: (s: string) => console.log(s),
-    warn: (s: string) => console.warn(s),
-    error: (s: string) => console.error(s)
-}
-
 // ------------------------- functions -------------------------
+
+// TODO create separate legislators.ts file and leave only federal code here
 
 function defaultLegislator(first: string, last: string): Legislator {
     return {
@@ -48,7 +47,17 @@ function defaultLegislator(first: string, last: string): Legislator {
 }
 
 function makeNameId(first: string, last: string): string {
+    let firstNames = first.split(" ");
+    if (firstNames.length > 1) first = firstNames[0]; // use only first name in key
     return `${last.toLowerCase()}, ${first.toLowerCase()}`;
+}
+
+function standardizeName(name: string): string {
+    // Remove any trailing initials
+    if (name.endsWith(".")) return name.substring(0, name.length - 3);
+    // TODO replace accented letters with unaccented
+
+    return name;
 }
 
 /**
@@ -62,9 +71,16 @@ export async function getAllLegislators(): Promise<Array<Legislator>> {
     // Process the HTML file containing the list of all legislators addresses
     const addressesHTML = fs.readFileSync("data/addresses-members-of-parliament.html", "utf8"); // TODO fetch
     const root = parse(addressesHTML);
-    const blocks = root.querySelectorAll("div").filter(a => a.childNodes.length === 13);
+    const blocks = root.querySelectorAll("div").filter(div => {
+        return (div.getAttribute("class") === "col-lg-4") &&
+            ((div.childNodes[1] as HTMLElement).tagName === "H2");
+    });
     let legislatorsByNameId = new Map<string, Legislator>();
-    blocks.map(htmlBlockToLegislator).forEach((l: Legislator) => legislatorsByNameId.set(l.nameId, l));
+    console.log("HTML blocks to process: " + blocks.length);
+    blocks.map(htmlBlockToLegislator).forEach((l: Legislator) => {
+        legislatorsByNameId.set(l.nameId, l)
+    });
+    console.info(`Number of legislators collected: ${legislatorsByNameId.size}`);
 
     // Process XML file containing 
     const xml = fs.readFileSync("data/parliament-members.xml", "utf8");
@@ -77,10 +93,15 @@ export async function getAllLegislators(): Promise<Array<Legislator>> {
     // Process the search HTML to get links to contact data (for email, website, etc)
     const searchHTML = fs.readFileSync("data/Current-Members-of-Parliament-Search.html", "utf8"); // TODO fetch
     const searchRoot = parse(searchHTML);
-    const anchors = searchRoot.querySelectorAll("a");
-    // const promises = Array<Promise<string>>();
-    anchors.filter(a => a.classNames === "ce-mip-mp-tile").forEach(a => {
-        if (a.getAttribute("href")) mergeInContactLink(a.getAttribute("href") as string, legislatorsByNameId)
+    const tiles = searchRoot.querySelectorAll("div").filter(
+        div => div.getAttribute("class") === "ce-mip-mp-tile-container "
+    );
+    tiles.forEach(tile => {
+        let href = tile.querySelector("a")?.getAttribute("href") as string;
+        let name = tile.querySelectorAll("div").filter(
+            div => div.getAttribute("class") === "ce-mip-mp-name"
+        )[0].text;
+        if (href) mergeInContactLink(standardizeName(name), href, legislatorsByNameId)
     });
 
     // fetch contact data for each legislator in parallel
@@ -89,7 +110,9 @@ export async function getAllLegislators(): Promise<Array<Legislator>> {
         promises.push(fetchAndMergeDataFromContactLink(leg));
     });
     let results = await Promise.allSettled(promises);
-    logger.log(`contact data fetched with ${results.filter(r => r.status === "rejected").length} failures`);
+    console.log(`contact data fetch: ${results.length} attempts with ${results.filter(r => r.status === "rejected").length} failures`);
+
+    // TODO soon get all pictures from https://www.ourcommons.ca/Members/en/constituencies
 
     return Array.from(legislatorsByNameId.values());
 }
@@ -101,56 +124,75 @@ export async function getAllLegislators(): Promise<Array<Legislator>> {
  * @returns 
  */
 function htmlBlockToLegislator(b: HTMLElement): Legislator {
-    let name = b.childNodes[1].text;
-    logger.log(`processing name = ${name}`);
+    let name = standardizeName(b.childNodes[1].text);
+    console.log(`htmlBlockToLegislator: processing name = ${name}`);
     let [last, first] = name.split(", ");
 
-    let rtn: Legislator = defaultLegislator(first, last);
-    let cursor: HTMLDocumentCursor = { nodes: b.childNodes, index: 0 };
-    while (cursor.index < cursor.nodes.length) {
-        let type = extractAddressType(cursor);
-        if (type === null) break; // no more addresses
+    let leg: Legislator = defaultLegislator(first, last);
+    try {
+        let cursor: HTMLDocumentCursor = { nodes: b.childNodes, index: 0 };
+        while (cursor.index < cursor.nodes.length) {
+            let addressType = extractAddressType(cursor);
+            if (addressType === null) break; // no more addresses
 
-        // Recursively process any P elements
-        if ((cursor.nodes[cursor.index] as HTMLElement).tagName === "P") {
-            cursor = { nodes: cursor.nodes[cursor.index].childNodes, index: 0 };
+            if (addressType === "local") {
+                // Recursively process any P elements
+                let isFirst = true;
+                cursor.nodes.filter(n => (n as HTMLElement).tagName === "P").forEach(p => {
+                    let inner: HTMLDocumentCursor = { nodes: p.childNodes, index: 0 };
+                    let a: TypedAddress = { type: "local", physical: null, phone: "missing", fax: null };
+
+                    let addr = extractMultilineAddress(inner);
+                    if (addr.length > 0) {
+                        a.physical = addr;
+                    }
+                    let otherProperties = extractNamedAttributes(inner);
+                    a = { ...a, ...otherProperties };
+                    leg.addresses.push(a);
+                    isFirst = false;
+                });
+            } else {
+                let a: TypedAddress = { type: "central", physical: null, phone: "missing", fax: null };
+                a.physical = HOUSE_OF_COMMONS_PHYSICAL_ADDRESS;
+                let otherProperties = extractNamedAttributes(cursor);
+                a = { ...a, ...otherProperties };
+                leg.addresses.push(a);
+            }
         }
-
-        let a: TypedAddress = { type: type, physical: null, phone: "missing", fax: null };
-
-        let addr = extractMultilineAddress(cursor);
-        if (addr.length > 0) {
-            a.physical = addr;
-        } else if (type === "central") {
-            a.physical = HOUSE_OF_COMMONS_PHYSICAL_ADDRESS;
-        }
-
-        let otherProperties = extractNamedAttributes(cursor);
-        a = { ...a, ...otherProperties };
-
-        rtn.addresses.push(a);
+    } catch (e) {
+        console.error(`htmlBlockToLegislator: ${b.toString()}\n -> ${e}`);
     }
-    return rtn;
+    // identify main local address
+    const locals = leg.addresses.filter(a => a.type === "local");
+    if (locals.length == 1) {
+        locals[0].type = "main-local";
+    } else if (locals.length > 1) {
+        const main = locals.find(a => a.physical?.includes("(Main"));
+        if (main) main.type = "main-local";
+    }
+    return leg;
 }
 
-function mergeInContactLink(href: string, legislatorsByNameId: Map<string, Legislator>): void {
+function mergeInContactLink(fullName: string, href: string, legislatorsByNameId: Map<string, Legislator>): void {
     let [nothing, members, en, rest] = href.split("/");
-    let [names, id] = rest.split("(") as string[];
+    let [_, id] = rest.split("(") as string[];
     id = id.substring(0, id.length - 1); // drop trailing ")"
-    let [first, last] = names.split("-");
+    const names = fullName.split(" ");
+    const first = names[0];
+    const last = names[names.length - 1]; // in case there is a middle name to ignore
 
     let leg: Legislator = legislatorsByNameId.get(makeNameId(first, last)) as Legislator;
     if (leg !== undefined) {
         leg.id = id;
         leg.urls["contact"] = `https://www.ourcommons.ca${href}`;
     } else {
-        logger.warn(`mergeInContactLink: UNKNOWN legislator id = ${last}, ${first}`)
+        console.warn(`mergeInContactLink: UNKNOWN legislator id = ${last}, ${first}`)
     }
 
 }
 
 function mergeInConstituencyData(legislatorsByNameId: Map<string, Legislator>, xmlData: XMLMemberOfParliament) {
-    let nameId = makeNameId(xmlData.PersonOfficialFirstName, xmlData.PersonOfficialLastName);
+    let nameId = makeNameId(standardizeName(xmlData.PersonOfficialFirstName), xmlData.PersonOfficialLastName);
     let leg = legislatorsByNameId.get(nameId);
     if (leg !== undefined) {
         leg.honorific = xmlData.PersonShortHonorific;
@@ -159,14 +201,14 @@ function mergeInConstituencyData(legislatorsByNameId: Map<string, Legislator>, x
         leg.province = xmlData.ConstituencyProvinceTerritoryName;
         leg.fromDate = xmlData.FromDateTime.substring(0, 10);
     } else {
-        logger.warn(`mergeInConstituencyData: UNKNOWN legislator id = ${nameId}`)
+        console.warn(`mergeInConstituencyData: UNKNOWN legislator id = ${nameId}`)
     }
 }
 
 async function fetchAndMergeDataFromContactLink(leg: Legislator): Promise<void> {
     let contactURL = leg.urls["contact"];
     if (!contactURL) return Promise.resolve();
-    return fetch(contactURL)
+    return fetch(contactURL, { insecureHTTPParser: false })
         .then((res: any) => {
             if (res.ok) {
                 return res.text();
@@ -176,7 +218,7 @@ async function fetchAndMergeDataFromContactLink(leg: Legislator): Promise<void> 
             }
         })
         .then((body: any) => {
-            console.log(body)
+            console.log(`fetchAndMergeDataFromContactLink: processing data from ${contactURL}`);
             const root = parse(body);
             const blocks = root.querySelectorAll("div").filter(a => {
                 // div contains h4 element with text "Email"
@@ -186,7 +228,6 @@ async function fetchAndMergeDataFromContactLink(leg: Legislator): Promise<void> 
                 block.querySelectorAll("a").forEach(a => {
                     const href = a.getAttribute("href");
                     if (!href) return;
-                    console.log(href);
                     if (href.includes("mailto")) {
                         leg.email = href.substring(7); // drop the mailto:
                     } else if (href.includes("http")) {
@@ -194,8 +235,11 @@ async function fetchAndMergeDataFromContactLink(leg: Legislator): Promise<void> 
                     }
                 });
             });
-        });
+        })
+        .catch((err: any) => console.warn(
+            `fetchAndMergeDataFromContactLink: ${contactURL} -> ${err}\n${err.stack}`));
 }
+
 
 // ----------------------- Helper functions -----------------------
 
@@ -220,7 +264,7 @@ function extractAddressType(cursor: HTMLDocumentCursor): string | null {
                 eatWhitespace(cursor);
                 return allowedTypes[rawType];
             } else {
-                logger.error(`findAddressType: UNKNOWN raw type = ${rawType}`);
+                console.error(`findAddressType: UNKNOWN raw type = ${rawType}`);
                 return null;
             }
         }
@@ -252,7 +296,7 @@ function extractNamedAttributes(cursor: HTMLDocumentCursor): any {
             if (allowedNames.includes(rawName)) {
                 rtn[nameMap.get(rawName) as string] = value.trim();
             } else {
-                logger.warn(`ILLEGAL attribute name: ${rawName}`);
+                console.warn(`ILLEGAL attribute name: ${rawName}`);
             }
         }
     }
@@ -288,7 +332,7 @@ function extractMultilineAddress(cursor: HTMLDocumentCursor): string {
  * @returns 
  */
 function eatWhitespace(cursor: HTMLDocumentCursor) {
-    while (true) {
+    while (cursor.index < cursor.nodes.length) {
         let n = cursor.nodes[cursor.index];
         if (n.toString().trim().length != 0) break;
         cursor.index++;
