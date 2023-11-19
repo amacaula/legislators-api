@@ -15,11 +15,18 @@ export type Legislator = {
     email: string
     urls: LegislatorURLs
 }
+
 export type TypedAddress = {
-    type: string
+    type: AddressType
     physical: string | null
     phone: string
     fax: string | null
+}
+
+export enum AddressType {
+    Central = "central",
+    Local = "local",
+    MainLocal = "main-local",
 }
 
 export type LegislatorURLs = {

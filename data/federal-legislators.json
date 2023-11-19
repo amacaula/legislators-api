@@ -6637,8 +6637,8 @@
         }
     },
     {
-        "id": "",
-        "nameId": "martinez ferrada, soraya",
+        "id": "104756",
+        "nameId": "ferrada, soraya",
         "firstName": "Soraya",
         "lastName": "Martinez Ferrada",
         "honorific": "Hon.",
@@ -6661,8 +6661,11 @@
                 "fax": "514-283-6485"
             }
         ],
-        "email": "",
-        "urls": {}
+        "email": "Soraya.MartinezFerrada@parl.gc.ca",
+        "urls": {
+            "contact": "https://www.ourcommons.ca/members/en/soraya-martinez-ferrada(104756)",
+            "website": "http://sorayamartinezferrada.ca"
+        }
     },
     {
         "id": "9137",
@@ -7953,8 +7956,8 @@
         }
     },
     {
-        "id": "",
-        "nameId": "petitpas taylor, ginette",
+        "id": "88364",
+        "nameId": "taylor, ginette",
         "firstName": "Ginette",
         "lastName": "Petitpas Taylor",
         "honorific": "Hon.",
@@ -7977,8 +7980,11 @@
                 "fax": "506-851-3273"
             }
         ],
-        "email": "",
-        "urls": {}
+        "email": "ginette.petitpastaylor@parl.gc.ca",
+        "urls": {
+            "contact": "https://www.ourcommons.ca/members/en/ginette-petitpas-taylor(88364)",
+            "website": "http://ginettepetitpastaylor.libparl.ca"
+        }
     },
     {
         "id": "413",
@@ -8209,8 +8215,8 @@
         }
     },
     {
-        "id": "",
-        "nameId": "rempel garner, michelle",
+        "id": "71902",
+        "nameId": "garner, michelle",
         "firstName": "Michelle",
         "lastName": "Rempel Garner",
         "honorific": "Hon.",
@@ -8233,8 +8239,10 @@
                 "fax": "403-230-4368"
             }
         ],
-        "email": "",
-        "urls": {}
+        "email": "michelle.rempel@parl.gc.ca",
+        "urls": {
+            "contact": "https://www.ourcommons.ca/members/en/michelle-rempel-garner(71902)"
+        }
     },
     {
         "id": "59235",
@@ -9609,8 +9617,8 @@
         }
     },
     {
-        "id": "",
-        "nameId": "taylor roy, leah",
+        "id": "105024",
+        "nameId": "roy, leah",
         "firstName": "Leah",
         "lastName": "Taylor Roy",
         "honorific": "",
@@ -9633,8 +9641,10 @@
                 "fax": "905-773-8374"
             }
         ],
-        "email": "",
-        "urls": {}
+        "email": "leah.taylorroy@parl.gc.ca",
+        "urls": {
+            "contact": "https://www.ourcommons.ca/members/en/leah-taylor-roy(105024)"
+        }
     },
     {
         "id": "88552",
@@ -9976,8 +9986,8 @@
         }
     },
     {
-        "id": "",
-        "nameId": "van bynen, tony",
+        "id": "105270",
+        "nameId": "bynen, tony",
         "firstName": "Tony",
         "lastName": "Van Bynen",
         "honorific": "",
@@ -10000,12 +10010,15 @@
                 "fax": "905-953-7527"
             }
         ],
-        "email": "",
-        "urls": {}
+        "email": "Tony.VanBynen@parl.gc.ca",
+        "urls": {
+            "contact": "https://www.ourcommons.ca/members/en/tony-van-bynen(105270)",
+            "website": "http://www.vanbynen.ca"
+        }
     },
     {
-        "id": "",
-        "nameId": "van koeverden, adam",
+        "id": "105242",
+        "nameId": "koeverden, adam",
         "firstName": "Adam",
         "lastName": "van Koeverden",
         "honorific": "",
@@ -10028,12 +10041,15 @@
                 "fax": "905-693-0704"
             }
         ],
-        "email": "",
-        "urls": {}
+        "email": "Adam.vanKoeverden@parl.gc.ca",
+        "urls": {
+            "contact": "https://www.ourcommons.ca/members/en/adam-van-koeverden(105242)",
+            "website": "http://www.adamvankoeverdenmp.ca"
+        }
     },
     {
-        "id": "",
-        "nameId": "van popta, tako",
+        "id": "105811",
+        "nameId": "popta, tako",
         "firstName": "Tako",
         "lastName": "Van Popta",
         "honorific": "",
@@ -10056,8 +10072,11 @@
                 "fax": "604-534-5970"
             }
         ],
-        "email": "",
-        "urls": {}
+        "email": "Tako.VanPopta@parl.gc.ca",
+        "urls": {
+            "contact": "https://www.ourcommons.ca/members/en/tako-van-popta(105811)",
+            "website": "http://www.takovanpoptamp.ca"
+        }
     },
     {
         "id": "89045",
@@ -10275,10 +10294,9 @@
                 "fax": "418-663-2988"
             }
         ],
-        "email": "Julie.Vignola@parl.gc.ca",
+        "email": "",
         "urls": {
-            "contact": "https://www.ourcommons.ca/members/en/julie-vignola(104656)",
-            "website": "http://julievignola.quebec"
+            "contact": "https://www.ourcommons.ca/members/en/julie-vignola(104656)"
         }
     },
     {

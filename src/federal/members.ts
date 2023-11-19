@@ -1,13 +1,10 @@
 import { parse, HTMLElement, Node, TextNode } from 'node-html-parser';
 const fs = require("fs");
-import { Legislator, LegislatorURLs, TypedAddress } from '../types';
-import { query } from 'express';
+import { Legislator, LegislatorURLs, TypedAddress, AddressType } from '../types';
 const { XMLParser } = require("fast-xml-parser");
 const fetch = require('node-fetch');
 
-// TODO find out why have 275 instead of 338 legislators
-// TODO parse toll free phone numbers for those that have them
-// TODO switch to xray for HTML scraping - handles classes properly
+// TODO switch to xray for HTML scraping - and check use of css selector formats
 // TODO keep track of all source document URLs
 // TODO separate cature and consume types
 
@@ -17,16 +14,6 @@ const fetch = require('node-fetch');
 type HTMLDocumentCursor = {
     nodes: Array<Node>,
     index: number
-}
-
-type XMLMemberOfParliament = {
-    CaucusShortName: string // example 'Conservative'
-    ConstituencyName: string // example 'Edmonton Manning'
-    ConstituencyProvinceTerritoryName: string // example 'Alberta'
-    FromDateTime: string // example '2021-09-20T00:00:00'
-    PersonOfficialFirstName: string // example 'Ziad'
-    PersonOfficialLastName: string // example 'Aboultaif'
-    PersonShortHonorific: string // usually empty
 }
 
 const HOUSE_OF_COMMONS_PHYSICAL_ADDRESS = "House of Commons\nOttawa, Ontario\nCanada\nK1A 0A6";
@@ -49,6 +36,8 @@ function defaultLegislator(first: string, last: string): Legislator {
 function makeNameId(first: string, last: string): string {
     let firstNames = first.split(" ");
     if (firstNames.length > 1) first = firstNames[0]; // use only first name in key
+    let lastNames = last.split(" ");
+    if (lastNames.length > 1) last = lastNames[1]; // use only last word of last name in key
     return `${last.toLowerCase()}, ${first.toLowerCase()}`;
 }
 
@@ -56,6 +45,7 @@ function standardizeName(name: string): string {
     // Remove any trailing initials
     if (name.endsWith(".")) return name.substring(0, name.length - 3);
     // TODO replace accented letters with unaccented
+    // TODO replace double spaces with one space
 
     return name;
 }
@@ -96,6 +86,7 @@ export async function getAllLegislators(): Promise<Array<Legislator>> {
     const tiles = searchRoot.querySelectorAll("div").filter(
         div => div.getAttribute("class") === "ce-mip-mp-tile-container "
     );
+    console.log(`Number of tiles to process: ${tiles.length}`);
     tiles.forEach(tile => {
         let href = tile.querySelector("a")?.getAttribute("href") as string;
         let name = tile.querySelectorAll("div").filter(
@@ -103,6 +94,8 @@ export async function getAllLegislators(): Promise<Array<Legislator>> {
         )[0].text;
         if (href) mergeInContactLink(standardizeName(name), href, legislatorsByNameId)
     });
+
+    // TODO process search for constituencies to get constituency ids linked to MPs
 
     // fetch contact data for each legislator in parallel
     let promises = Array<Promise<void>>();
@@ -135,12 +128,12 @@ function htmlBlockToLegislator(b: HTMLElement): Legislator {
             let addressType = extractAddressType(cursor);
             if (addressType === null) break; // no more addresses
 
-            if (addressType === "local") {
+            if (addressType === AddressType.Local) {
                 // Recursively process any P elements
                 let isFirst = true;
                 cursor.nodes.filter(n => (n as HTMLElement).tagName === "P").forEach(p => {
                     let inner: HTMLDocumentCursor = { nodes: p.childNodes, index: 0 };
-                    let a: TypedAddress = { type: "local", physical: null, phone: "missing", fax: null };
+                    let a: TypedAddress = { type: AddressType.Local, physical: null, phone: "missing", fax: null };
 
                     let addr = extractMultilineAddress(inner);
                     if (addr.length > 0) {
@@ -152,7 +145,7 @@ function htmlBlockToLegislator(b: HTMLElement): Legislator {
                     isFirst = false;
                 });
             } else {
-                let a: TypedAddress = { type: "central", physical: null, phone: "missing", fax: null };
+                let a: TypedAddress = { type: AddressType.Central, physical: null, phone: "missing", fax: null };
                 a.physical = HOUSE_OF_COMMONS_PHYSICAL_ADDRESS;
                 let otherProperties = extractNamedAttributes(cursor);
                 a = { ...a, ...otherProperties };
@@ -163,15 +156,17 @@ function htmlBlockToLegislator(b: HTMLElement): Legislator {
         console.error(`htmlBlockToLegislator: ${b.toString()}\n -> ${e}`);
     }
     // identify main local address
-    const locals = leg.addresses.filter(a => a.type === "local");
+    const locals = leg.addresses.filter(a => a.type === AddressType.Local);
     if (locals.length == 1) {
-        locals[0].type = "main-local";
+        locals[0].type = AddressType.MainLocal;
     } else if (locals.length > 1) {
         const main = locals.find(a => a.physical?.includes("(Main"));
-        if (main) main.type = "main-local";
+        if (main) main.type = AddressType.MainLocal;
     }
     return leg;
 }
+
+// ----------------------- Contact links from Search HTML page -----------------------
 
 function mergeInContactLink(fullName: string, href: string, legislatorsByNameId: Map<string, Legislator>): void {
     let [nothing, members, en, rest] = href.split("/");
@@ -186,9 +181,21 @@ function mergeInContactLink(fullName: string, href: string, legislatorsByNameId:
         leg.id = id;
         leg.urls["contact"] = `https://www.ourcommons.ca${href}`;
     } else {
-        console.warn(`mergeInContactLink: UNKNOWN legislator id = ${last}, ${first}`)
+        console.warn(`mergeInContactLink: UNKNOWN legislator nameId = ${last}, ${first}`)
     }
 
+}
+
+// ----------------------- Constituency data in XML format -----------------------
+
+type XMLMemberOfParliament = {
+    CaucusShortName: string // example 'Conservative'
+    ConstituencyName: string // example 'Edmonton Manning'
+    ConstituencyProvinceTerritoryName: string // example 'Alberta'
+    FromDateTime: string // example '2021-09-20T00:00:00'
+    PersonOfficialFirstName: string // example 'Ziad'
+    PersonOfficialLastName: string // example 'Aboultaif'
+    PersonShortHonorific: string // usually empty
 }
 
 function mergeInConstituencyData(legislatorsByNameId: Map<string, Legislator>, xmlData: XMLMemberOfParliament) {

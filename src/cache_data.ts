@@ -7,11 +7,6 @@ const fs = require("fs");
 (async () => {
     let legislators = await getAllLegislators();
 
-    fs.writeFileSync("./data/legislators.json", JSON.stringify(legislators));
-    // legislators.forEach(legislator => console.log(JSON.stringify(legislator)));
+    fs.writeFileSync("./data/federal-legislators.json", JSON.stringify(legislators));
 })();
-
-// TODO check validate data before updating the cache that serves graphql queries
-// TODO validate there are 338 legislators
-// TODO validate each legislator has needed addresses
 
