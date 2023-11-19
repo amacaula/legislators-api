@@ -1,4 +1,4 @@
-import { Legislator, TypedAddress } from './types';
+import { validateLegislators } from './federal/validate';
 import { getAllLegislators } from './federal/members';
 const fs = require("fs");
 
@@ -6,6 +6,8 @@ const fs = require("fs");
 
 (async () => {
     let legislators = await getAllLegislators();
+    let issues = validateLegislators(legislators);
+    issues.forEach(i => console.warn(JSON.stringify(i)));
 
     fs.writeFileSync("./data/federal-legislators.json", JSON.stringify(legislators));
 })();

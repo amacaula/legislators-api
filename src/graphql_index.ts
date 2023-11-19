@@ -1,7 +1,7 @@
 import { ApolloServer, ApolloServerPlugin, BaseContext, GraphQLRequestContext, GraphQLRequestListener } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { Legislator } from './types';
-const legislators: Array<Legislator> = require("../data/legislators.json");
+const legislators: Array<Legislator> = require("../data/federal-legislators.json");
 
 // A schema is a collection of type definitions (hence "typeDefs")
 // that together define the "shape" of queries that are executed against
@@ -9,13 +9,12 @@ const legislators: Array<Legislator> = require("../data/legislators.json");
 const typeDefs = `#graphql
   # Comments in GraphQL strings (such as this one) start with the hash (#) symbol.
 
-  # This "Book" type defines the queryable fields for every book in our data source.
   type Legislator {
     id: String!
+    nameId: String!
     firstName: String!
     lastName: String!
-    province: String!
-    constituency: String!
+    honorific: String
     party: String!
     fromDate: String!
     toDate: String
@@ -23,6 +22,16 @@ const typeDefs = `#graphql
     email: String
     urls: [String] # TODO is there a URL type?
     addresses: [TypedAddress!]!
+    constituency: Constituency!
+  }
+
+  type Constituency {
+    id: String!
+    name: String!
+    country: String!
+    region: String!
+    municipality: String
+    currentLegislatorId: String
   }
 
   type TypedAddress {

@@ -1,6 +1,6 @@
 import { parse, HTMLElement, Node, TextNode } from 'node-html-parser';
 const fs = require("fs");
-import { Legislator, LegislatorURLs, TypedAddress, AddressType } from '../types';
+import { Legislator, LegislatorURLs, TypedAddress, AddressType, Constituency } from '../types';
 const { XMLParser } = require("fast-xml-parser");
 const fetch = require('node-fetch');
 
@@ -28,9 +28,21 @@ function defaultLegislator(first: string, last: string): Legislator {
     return {
         id: "", nameId: makeNameId(first, last), firstName: first, lastName: last, honorific: "",
         isCurrent: true, fromDate: "",
-        province: "", constituency: "", party: "",
-        addresses: [], email: "", urls: {} as LegislatorURLs
+        party: "", email: "",
+        addresses: [], urls: {} as LegislatorURLs,
+        constituency: defaultConstituency("unknown"),
     } as Legislator;
+}
+
+function defaultConstituency(name: string): Constituency {
+    return {
+        id: "",
+        name: name,
+        country: "Canada",
+        region: "",
+        municipality: null,
+        currentLegislatorId: null
+    }
 }
 
 function makeNameId(first: string, last: string): string {
@@ -59,7 +71,7 @@ function standardizeName(name: string): string {
 export async function getAllLegislators(): Promise<Array<Legislator>> {
 
     // Process the HTML file containing the list of all legislators addresses
-    const addressesHTML = fs.readFileSync("data/addresses-members-of-parliament.html", "utf8"); // TODO fetch
+    const addressesHTML = fs.readFileSync("data/addresses-members-of-parliament.html", "utf8"); // TODO fetch live
     const root = parse(addressesHTML);
     const blocks = root.querySelectorAll("div").filter(div => {
         return (div.getAttribute("class") === "col-lg-4") &&
@@ -81,7 +93,7 @@ export async function getAllLegislators(): Promise<Array<Legislator>> {
     });
 
     // Process the search HTML to get links to contact data (for email, website, etc)
-    const searchHTML = fs.readFileSync("data/Current-Members-of-Parliament-Search.html", "utf8"); // TODO fetch
+    const searchHTML = fs.readFileSync("data/Current-Members-of-Parliament-Search.html", "utf8"); // TODO fetch live
     const searchRoot = parse(searchHTML);
     const tiles = searchRoot.querySelectorAll("div").filter(
         div => div.getAttribute("class") === "ce-mip-mp-tile-container "
@@ -96,6 +108,7 @@ export async function getAllLegislators(): Promise<Array<Legislator>> {
     });
 
     // TODO process search for constituencies to get constituency ids linked to MPs
+    // from https://www.ourcommons.ca/members/en/constituencies
 
     // fetch contact data for each legislator in parallel
     let promises = Array<Promise<void>>();
@@ -179,6 +192,7 @@ function mergeInContactLink(fullName: string, href: string, legislatorsByNameId:
     let leg: Legislator = legislatorsByNameId.get(makeNameId(first, last)) as Legislator;
     if (leg !== undefined) {
         leg.id = id;
+        leg.constituency.currentLegislatorId = leg.id;
         leg.urls["contact"] = `https://www.ourcommons.ca${href}`;
     } else {
         console.warn(`mergeInContactLink: UNKNOWN legislator nameId = ${last}, ${first}`)
@@ -203,10 +217,10 @@ function mergeInConstituencyData(legislatorsByNameId: Map<string, Legislator>, x
     let leg = legislatorsByNameId.get(nameId);
     if (leg !== undefined) {
         leg.honorific = xmlData.PersonShortHonorific;
-        leg.constituency = xmlData.ConstituencyName;
         leg.party = xmlData.CaucusShortName;
-        leg.province = xmlData.ConstituencyProvinceTerritoryName;
         leg.fromDate = xmlData.FromDateTime.substring(0, 10);
+        leg.constituency.name = xmlData.ConstituencyName;
+        leg.constituency.region = xmlData.ConstituencyProvinceTerritoryName;
     } else {
         console.warn(`mergeInConstituencyData: UNKNOWN legislator id = ${nameId}`)
     }

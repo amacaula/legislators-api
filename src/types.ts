@@ -1,19 +1,61 @@
 import { type } from "os"
 
+// TODO refactor to put constituency data in a separate type
+// TODO include source URLs
+// TODO consider moving addreses into consituency data
+
+// --- Government and Legislature ---
+
+export enum GovernmentLevel {
+    Federal = "federal",
+    Regional = "regional",
+    Municipal = "municipal"
+}
+
+export type Government = {
+    id: string
+    level: GovernmentLevel
+    name: string
+    province: string
+    legislature: Legislature
+    constituencies: Array<Constituency>
+    legislators: Array<Legislator>
+}
+
+export type Legislature = {
+    name: string
+    address: TypedAddress
+    urls: LegislatureURLs
+}
+
+export type LegislatureURLs = {
+    website: string
+}
+
+// --- Legislators ---
+
 export type Legislator = {
     id: string
-    honorific: string
+    honorific: string | null
     firstName: string
     lastName: string
     nameId: string
     isCurrent: boolean
-    addresses: Array<TypedAddress>
-    province: string
-    constituency: string
     party: string
     fromDate: string
     email: string
+    constituency: Constituency
+    addresses: Array<TypedAddress>
     urls: LegislatorURLs
+}
+
+export type Constituency = {
+    id: string
+    name: string
+    country: string
+    region: string
+    municipality: string | null
+    currentLegislatorId: string | null
 }
 
 export type TypedAddress = {

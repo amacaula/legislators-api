@@ -51,7 +51,7 @@ function checkCachedLegislatorsAndLogIssues(fname: string) {
     let issues = validateLegislators(legislators);
     if (issues.length > 0) {
         console.log(`Found ${issues.length} issues:`);
-        issues.forEach(i => console.log(JSON.stringify(i)));
+        issues.forEach(i => console.warn(JSON.stringify(i)));
     } else {
         console.log("No issues found");
     }
