@@ -11,8 +11,7 @@
     "install": "^0.13.0",
     "node-fetch": "^2.7.0",
     "node-html-parser": "^6.1.11",
-    "npm": "^10.2.3",
-    "x-ray": "^2.3.4"
+    "npm": "^10.2.3"
   },
   "name": "legislators-api",
   "description": "# Members of parliament",

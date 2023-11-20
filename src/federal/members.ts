@@ -73,10 +73,9 @@ export async function getAllLegislators(): Promise<Array<Legislator>> {
     // Process the HTML file containing the list of all legislators addresses
     const addressesHTML = fs.readFileSync("data/addresses-members-of-parliament.html", "utf8"); // TODO fetch live
     const root = parse(addressesHTML);
-    const blocks = root.querySelectorAll("div").filter(div => {
-        return (div.getAttribute("class") === "col-lg-4") &&
-            ((div.childNodes[1] as HTMLElement).tagName === "H2");
-    });
+
+    const blocks = root.querySelectorAll("div.col-lg-4")
+        .filter(div => (div.childNodes[1] as HTMLElement)?.tagName === "H2");
     let legislatorsByNameId = new Map<string, Legislator>();
     console.log("HTML blocks to process: " + blocks.length);
     blocks.map(htmlBlockToLegislator).forEach((l: Legislator) => {
@@ -95,16 +94,16 @@ export async function getAllLegislators(): Promise<Array<Legislator>> {
     // Process the search HTML to get links to contact data (for email, website, etc)
     const searchHTML = fs.readFileSync("data/Current-Members-of-Parliament-Search.html", "utf8"); // TODO fetch live
     const searchRoot = parse(searchHTML);
-    const tiles = searchRoot.querySelectorAll("div").filter(
-        div => div.getAttribute("class") === "ce-mip-mp-tile-container "
-    );
+    const tiles = searchRoot.querySelectorAll("div.ce-mip-mp-tile-container");
     console.log(`Number of tiles to process: ${tiles.length}`);
     tiles.forEach(tile => {
         let href = tile.querySelector("a")?.getAttribute("href") as string;
-        let name = tile.querySelectorAll("div").filter(
-            div => div.getAttribute("class") === "ce-mip-mp-name"
-        )[0].text;
-        if (href) mergeInContactLink(standardizeName(name), href, legislatorsByNameId)
+        let name = tile.querySelectorAll("div.ce-mip-mp-name")[0]?.text;
+        if (href && name) {
+            mergeInContactLink(standardizeName(name), href, legislatorsByNameId);
+        } else {
+            console.warn(`getAllLegislators: MISSING name ${name} or contact link ${href}`);
+        }
     });
 
     // TODO process search for constituencies to get constituency ids linked to MPs
