@@ -7,21 +7,24 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Run server",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "program": "${workspaceFolder}/out/server.js",
-            "smartStep": true,
-        },
-        {
-            "type": "node",
-            "request": "launch",
             "name": "cache_data.ts",
             "skipFiles": [
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}/out/cache_data.js",
+            "smartStep": true,
+            "env": {
+                "NODE_TLS_REJECT_UNAUTHORIZED": "0",
+            }
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test_retrievals.ts",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/out/utils/test_retrievals.js",
             "smartStep": true,
             "env": {
                 "NODE_TLS_REJECT_UNAUTHORIZED": "0",
@@ -50,25 +53,22 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test_xray.ts",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "program": "${workspaceFolder}/out/utils/test_xray.js",
-            "smartStep": true,
-            "env": {
-                "NODE_TLS_REJECT_UNAUTHORIZED": "0",
-            }
-        },
-        {
-            "type": "node",
-            "request": "launch",
             "name": "validate.ts",
             "skipFiles": [
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}/out/federal/validate.js",
             "smartStep": true,
-        }
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Run server",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/out/server.js",
+            "smartStep": true,
+        },
     ]
 }

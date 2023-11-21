@@ -1,6 +1,9 @@
 import { parse, HTMLElement, Node, TextNode } from 'node-html-parser';
 const fs = require("fs");
-import { Legislator, LegislatorURLs, TypedAddress, AddressType, Constituency } from '../types';
+import {
+    Legislator, LegislatorURLs, TypedAddress, AddressType, Constituency,
+    Government, GovernmentLevel, Legislature
+} from '../types';
 const { XMLParser } = require("fast-xml-parser");
 const fetch = require('node-fetch');
 
@@ -17,6 +20,31 @@ type HTMLDocumentCursor = {
 }
 
 const HOUSE_OF_COMMONS_PHYSICAL_ADDRESS = "House of Commons\nOttawa, Ontario\nCanada\nK1A 0A6";
+
+const federalGovernment: Government = {
+    id: "ca.federal.houseOfCommons",
+    level: GovernmentLevel.Federal,
+    name: "House of Commons",
+    country: "Canada",
+    region: null,
+    legislature: {
+        name: "Parliament Building",
+        address: {
+            type: AddressType.Central,
+            physical: HOUSE_OF_COMMONS_PHYSICAL_ADDRESS,
+            phone: "1-866-599-4999",
+            fax: null
+        } as TypedAddress,
+        urls: {
+            website: "https://www.parl.ca/",
+            contact: "https://www.ourcommons.ca/en/contact-us"
+        },
+        email: "info@parl.gc.ca"
+    } as Legislature,
+    constituencies: new Array<Constituency>(),
+    legislators: new Array<Legislator>()
+}
+// TODO use this as parent object and JSON.stringify
 
 const STOP_TAGS = ["H3", "DIV", "P"];
 
@@ -58,8 +86,31 @@ function standardizeName(name: string): string {
     if (name.endsWith(".")) return name.substring(0, name.length - 3);
     // TODO replace accented letters with unaccented
     // TODO replace double spaces with one space
-
+    // TODO generalize for any order of first and last names
     return name;
+}
+
+// ----------------------- Main functions -----------------------
+
+export async function lookupLegislatorAndConsitituencyNamesByPostal(postal: string): Promise<[string, string]> {
+    // This URL returns search result as CSV of format:
+    // 'Honorific Title,First Name,Last Name,Constituency,Province / Territory,Political Affiliation,Start Date,End Date
+    // ,Don,Davies,Vancouver Kingsway,British Columbia,NDP,2021-09-20 12:00:00 AM,
+    let url: string = `https://www.ourcommons.ca/Members/en/search/csv?searchText=${encodeURI(postal)}&parliament=all`;
+    return fetch(url, { insecureHTTPParser: false }) // TODO need this?
+        .then((res: any) => {
+            if (res.ok) {
+                return res.text();
+            } else {
+                console.warn(`lookupConsitituencyByPostal: ${url} -> HTTP error: ${res.status}`);
+                return
+            }
+        })
+        .then((body: any) => {
+            if (!body) return Promise.reject(`lookupConsitituencyByPostal: ${url} -> no body`);
+            let [_1, first, last, constituencyName] = body.split("\n")[1]?.split(",");
+            return [`${first} ${last}`, constituencyName];
+        });
 }
 
 /**

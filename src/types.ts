@@ -1,8 +1,7 @@
 import { type } from "os"
 
-// TODO refactor to put constituency data in a separate type
 // TODO include source URLs
-// TODO consider moving addreses into consituency data
+// TODO allow navigation from Constituency to Legislator (and configure JSON.stringify)
 
 // --- Government and Legislature ---
 
@@ -16,7 +15,8 @@ export type Government = {
     id: string
     level: GovernmentLevel
     name: string
-    province: string
+    country: string
+    region: string | null
     legislature: Legislature
     constituencies: Array<Constituency>
     legislators: Array<Legislator>
@@ -26,6 +26,7 @@ export type Legislature = {
     name: string
     address: TypedAddress
     urls: LegislatureURLs
+    email: string
 }
 
 export type LegislatureURLs = {
