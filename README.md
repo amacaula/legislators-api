@@ -1,5 +1,9 @@
 # legislators-api
 
+TODO switch to "modules" from "commonjs"
+
+TODO separate README.md for scraping vs the API
+
 # Members of parliament
 
 A full list of members of parliament can be retrieved from the

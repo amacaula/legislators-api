@@ -1,4 +1,4 @@
-import { type } from "os"
+import { Government } from "./models";
 
 // TODO include source URLs
 // TODO allow navigation from Constituency to Legislator (and configure JSON.stringify)
@@ -11,7 +11,11 @@ export enum GovernmentLevel {
     Municipal = "municipal"
 }
 
-export type Government = {
+export type LegislatorLookupProvider = {
+    lookupLegislatorAndConsitituencyNamesByPostal: (postal: string) => Promise<[string, string]>
+}
+
+export type GovernmentData = {
     id: string
     level: GovernmentLevel
     name: string
@@ -20,6 +24,7 @@ export type Government = {
     legislature: Legislature
     constituencies: Array<Constituency>
     legislators: Array<Legislator>
+    lookupProvider: LegislatorLookupProvider
 }
 
 export type Legislature = {
@@ -45,9 +50,9 @@ export type Legislator = {
     party: string
     fromDate: string
     email: string
-    constituency: Constituency
     addresses: Array<TypedAddress>
     urls: LegislatorURLs
+    constituency: Constituency | null
 }
 
 export type Constituency = {
@@ -56,7 +61,7 @@ export type Constituency = {
     country: string
     region: string
     municipality: string | null
-    currentLegislatorId: string | null
+    legislator: Legislator | null
 }
 
 export type TypedAddress = {

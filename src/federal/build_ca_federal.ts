@@ -2,13 +2,14 @@ import { parse, HTMLElement, Node, TextNode } from 'node-html-parser';
 const fs = require("fs");
 import {
     Legislator, LegislatorURLs, TypedAddress, AddressType, Constituency,
-    Government, GovernmentLevel, Legislature
+    GovernmentData, GovernmentLevel, Legislature
 } from '../types';
+import { MPlookupProvider } from './lookups';
+import { makeNameId, defaultLegislator, standardizeName } from '../models';
 const { XMLParser } = require("fast-xml-parser");
 const fetch = require('node-fetch');
 
 // TODO switch to xray for HTML scraping - and check use of css selector formats
-// TODO keep track of all source document URLs
 // TODO separate cature and consume types
 
 // ------------------------- types and globals -------------------------
@@ -21,7 +22,7 @@ type HTMLDocumentCursor = {
 
 const HOUSE_OF_COMMONS_PHYSICAL_ADDRESS = "House of Commons\nOttawa, Ontario\nCanada\nK1A 0A6";
 
-const federalGovernment: Government = {
+const canadaFederalGovernment: GovernmentData = {
     id: "ca.federal.houseOfCommons",
     level: GovernmentLevel.Federal,
     name: "House of Commons",
@@ -42,75 +43,24 @@ const federalGovernment: Government = {
         email: "info@parl.gc.ca"
     } as Legislature,
     constituencies: new Array<Constituency>(),
-    legislators: new Array<Legislator>()
+    legislators: new Array<Legislator>(),
+    lookupProvider: MPlookupProvider
 }
-// TODO use this as parent object and JSON.stringify
 
 const STOP_TAGS = ["H3", "DIV", "P"];
 
-// ------------------------- functions -------------------------
-
-// TODO create separate legislators.ts file and leave only federal code here
-
-function defaultLegislator(first: string, last: string): Legislator {
-    return {
-        id: "", nameId: makeNameId(first, last), firstName: first, lastName: last, honorific: "",
-        isCurrent: true, fromDate: "",
-        party: "", email: "",
-        addresses: [], urls: {} as LegislatorURLs,
-        constituency: defaultConstituency("unknown"),
-    } as Legislator;
-}
-
-function defaultConstituency(name: string): Constituency {
-    return {
-        id: "",
-        name: name,
-        country: "Canada",
-        region: "",
-        municipality: null,
-        currentLegislatorId: null
-    }
-}
-
-function makeNameId(first: string, last: string): string {
-    let firstNames = first.split(" ");
-    if (firstNames.length > 1) first = firstNames[0]; // use only first name in key
-    let lastNames = last.split(" ");
-    if (lastNames.length > 1) last = lastNames[1]; // use only last word of last name in key
-    return `${last.toLowerCase()}, ${first.toLowerCase()}`;
-}
-
-function standardizeName(name: string): string {
-    // Remove any trailing initials
-    if (name.endsWith(".")) return name.substring(0, name.length - 3);
-    // TODO replace accented letters with unaccented
-    // TODO replace double spaces with one space
-    // TODO generalize for any order of first and last names
-    return name;
-}
-
 // ----------------------- Main functions -----------------------
 
-export async function lookupLegislatorAndConsitituencyNamesByPostal(postal: string): Promise<[string, string]> {
-    // This URL returns search result as CSV of format:
-    // 'Honorific Title,First Name,Last Name,Constituency,Province / Territory,Political Affiliation,Start Date,End Date
-    // ,Don,Davies,Vancouver Kingsway,British Columbia,NDP,2021-09-20 12:00:00 AM,
-    let url: string = `https://www.ourcommons.ca/Members/en/search/csv?searchText=${encodeURI(postal)}&parliament=all`;
-    return fetch(url, { insecureHTTPParser: false }) // TODO need this?
-        .then((res: any) => {
-            if (res.ok) {
-                return res.text();
-            } else {
-                console.warn(`lookupConsitituencyByPostal: ${url} -> HTTP error: ${res.status}`);
-                return
-            }
-        })
-        .then((body: any) => {
-            if (!body) return Promise.reject(`lookupConsitituencyByPostal: ${url} -> no body`);
-            let [_1, first, last, constituencyName] = body.split("\n")[1]?.split(",");
-            return [`${first} ${last}`, constituencyName];
-        });
+export async function getGovernment(): Promise<GovernmentData> {
+    let government = canadaFederalGovernment;
+    let legislators = await getAllLegislators();
+    // TODO doesn't guarantee we get all the consituencies
+
+    government.legislators = legislators;
+
+    // TODO fill out consituencies better pointing back to legislators
+    government.constituencies = legislators.map(l => l.constituency).filter(c => c !== null) as Constituency[];
+    return government;
 }
 
 /**
@@ -242,7 +192,7 @@ function mergeInContactLink(fullName: string, href: string, legislatorsByNameId:
     let leg: Legislator = legislatorsByNameId.get(makeNameId(first, last)) as Legislator;
     if (leg !== undefined) {
         leg.id = id;
-        leg.constituency.currentLegislatorId = leg.id;
+        if (leg.constituency) leg.constituency.id = leg.id;
         leg.urls["contact"] = `https://www.ourcommons.ca${href}`;
     } else {
         console.warn(`mergeInContactLink: UNKNOWN legislator nameId = ${last}, ${first}`)
@@ -269,8 +219,10 @@ function mergeInConstituencyData(legislatorsByNameId: Map<string, Legislator>, x
         leg.honorific = xmlData.PersonShortHonorific;
         leg.party = xmlData.CaucusShortName;
         leg.fromDate = xmlData.FromDateTime.substring(0, 10);
-        leg.constituency.name = xmlData.ConstituencyName;
-        leg.constituency.region = xmlData.ConstituencyProvinceTerritoryName;
+        if (leg.constituency) {
+            leg.constituency.name = xmlData.ConstituencyName;
+            leg.constituency.region = xmlData.ConstituencyProvinceTerritoryName;
+        }
     } else {
         console.warn(`mergeInConstituencyData: UNKNOWN legislator id = ${nameId}`)
     }
