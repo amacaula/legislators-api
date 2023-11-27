@@ -10,10 +10,11 @@
       "ES2020"
     ],
     "types": [
-      "node"
+      "node",
+      "jest"
     ],
     "resolveJsonModule": true, /* Enable importing .json files. */
-    "rootDir": "src", /* Can't use as server.ts is outside of that directory */
+    // "rootDir": "src", /* Can't use as server.ts is outside of that directory */
     "outDir": "out", /* Specify an output folder for all emitted files. */
     "sourceMap": true,
     /* Interop Constraints */
@@ -23,5 +24,13 @@
     "strict": true, /* Enable all strict type-checking options. */
     /* Completeness */
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
-  }
+  },
+  "include": [
+    "src",
+    "test",
+  ],
+  "exclude": [
+    "node_modules",
+    "out"
+  ]
 }
