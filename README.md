@@ -32,7 +32,45 @@ Notes:
 - Its not safe to process the name with "\-" in it. Need to pull the name from
   the last line
 
-## Lookup by Constituency
+## Constituencies
+
+All constituencies are listed at TODO: which contains blocks of form below which
+contains the following useful info:
+
+- name: Burnaby North&#x2014;Seymour
+- nameId: burnaby-north-seymour
+- id: 899
+- mip name: Terry Beech
+
+which in the address data connects to legislator:
+
+- constituency.name = Burnaby North—Seymour
+- legislator.nameId = beech, terry
+
+```
+<div class="mip-tile-section">
+            <div class="mip-constituency-tile-container">
+                <a class="mip-constituency-tile" href="/members/en/constituencies/burnaby-north-seymour(899)">
+                    <div class="mip-tile-top">
+                        <div class="mip-constituency-name">Burnaby North&#x2014;Seymour</div>
+                        <div class="mip-constituency-province">British Columbia</div>
+                    </div>
+                    <div class="mip-tile-bottom">
+                        <div class="mip-constituency-picture-container">
+                            <img class="mip-constituency-picture " src="/Content/Parliamentarians/Images/OfficialMPPhotos/44/BeechTerry_Lib.jpg" alt="Photo - Hon. Terry  Beech">
+                        </div>
+                            <div class="mip-tile-profile">
+                                <div class="mip-mp-title">
+                                    <span class="mip-mp-honourable">Hon.</span>
+                                    <span class="mip-mp-name">Terry  Beech</span>
+                                </div>
+                                <div class="mip-mp-party" style="border-color: #ed2e38;">Liberal</div>
+                            </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+```
 
 Lookup from postal code to MP and constituency is provided online at
 https://www.ourcommons.ca/Members/en/search/csv?searchText=v5w%203h8&parliament=all.

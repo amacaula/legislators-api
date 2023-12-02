@@ -16,10 +16,12 @@ export function makeIssue(key: string, fieldName: string, issue: string): KeyedI
     }
 }
 
-export function validateLegislators(legislators: Legislator[], expectedNum: number): KeyedIssue[] {
+export function validateGovernment(gov: Government): KeyedIssue[] {
+    let legislators = gov.legislators;
+    let constituencyIds = gov.constituencies.map(c => c.nameId);
     let issues = new Array<KeyedIssue>();
 
-    if (legislators.length != expectedNum) {
+    if (legislators.length != gov.expectedConstituencies) {
         issues.push({
             key: "<all>",
             fieldName: "legislators",
@@ -55,6 +57,14 @@ export function validateLegislators(legislators: Legislator[], expectedNum: numb
         // Check email
         if (!leg.email)
             issues.push(makeIssue(leg.id, "email", `Legislator ${leg.id} has no email`));
+
+        // Check constituency link existence and resolvability
+        if (!leg.constituencyNameId) {
+            issues.push(makeIssue(leg.id, "constituencyNameId", `Legislator ${leg.id} has no constituencyNameId`));
+        } else {
+            if (!constituencyIds.includes(leg.constituencyNameId))
+                issues.push(makeIssue(leg.id, "constituencyNameId", `constituencyNameId ${leg.constituencyNameId} reference not in list of constituencies`));
+        }
     });
 
     return issues;
@@ -72,7 +82,7 @@ async function checkFederalGovernment() {
         console.error(err);
         return;
     }
-    let issues = validateLegislators(legislators, 338);
+    let issues = validateGovernment(gov);
     if (issues.length > 0) {
         console.log(`Found ${issues.length} issues:`);
         issues.forEach(i => console.warn(JSON.stringify(i)));

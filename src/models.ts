@@ -3,6 +3,55 @@ import {
     Legislature, Legislator, LegislatorURLs, LegislatorLookupProvider
 } from "./types";
 
+export class Government {
+    readonly id!: string;
+    readonly level!: GovernmentLevel;
+    readonly name!: string;
+    readonly country!: string;
+    readonly region: string | null;
+    readonly legislature: Legislature;
+    readonly expectedConstituencies: number;
+    constituencies: Array<Constituency>;
+    constituenciesByNameId: Map<string, Constituency>;
+    legislators: Array<Legislator>;
+    legislatorsByNameId: Map<string, Legislator>;
+    lookupProvider!: LegislatorLookupProvider;
+
+    constructor(data: GovernmentData) {
+        this.id = data.id;
+        this.level = data.level;
+        this.name = data.name;
+        this.country = data.country;
+        this.region = data.region;
+        this.legislature = data.legislature;
+        this.expectedConstituencies = data.expectedConstituencies;
+        // TODO use optimized data structures below
+        this.constituencies = data.constituencies;
+        this.constituenciesByNameId = new Map<string, Constituency>();
+        this.legislators = data.legislators;
+        this.legislatorsByNameId = new Map<string, Legislator>();
+        this.lookupProvider = data.lookupProvider;
+    }
+
+    asGovernmentData(): GovernmentData {
+        return (({ id, level, name, country, region, legislature, expectedConstituencies, constituencies, legislators, lookupProvider }) =>
+            ({ id, level, name, country, region, legislature, expectedConstituencies, constituencies, legislators, lookupProvider }))(this);
+    }
+
+    async getConsitituencyByPostal(postal: string) {
+        let [legName, conName] = await this.lookupProvider
+            .lookupLegislatorAndConsitituencyNamesByPostal(postal);
+        return this.constituencies.find(c => c.name === conName) as Constituency;
+    }
+    getLegislatorByFullName(first: string, last: string) {
+        let nameId = makeNameId(first, last);
+        return this.legislators.find(l => l.nameId === nameId) as Legislator;
+    }
+    searchLegistlatorsByPartialNames(partial: string) {
+        return new Array<Legislator>(); // TODO implement
+    }
+}
+
 // ------------------------- functions -------------------------
 
 // TODO create separate legislators.ts file and leave only federal code here
@@ -13,18 +62,19 @@ export function defaultLegislator(first: string, last: string): Legislator {
         isCurrent: true, fromDate: "",
         party: "", email: "",
         addresses: [], urls: {} as LegislatorURLs,
-        constituency: defaultConstituency("unknown"),
+        constituencyNameId: "UNKNOWN",
     } as Legislator;
 }
 
 export function defaultConstituency(name: string): Constituency {
     return {
         id: "",
+        nameId: makeConstituencyNameId(name),
         name: name,
         country: "Canada",
         region: "",
         municipality: null,
-        legislator: null
+        legislatorNameId: "VACANT"
     }
 }
 
@@ -42,44 +92,13 @@ export function makeNameId(first: string, last: string): string {
     if (firstNames.length > 1) first = firstNames[0]; // use only first name in key
     let lastNames = last.split(" ");
     if (lastNames.length > 1) last = lastNames[1]; // use only last word of last name in key
-    return `${last.toLowerCase()}, ${first.toLowerCase()}`;
+    return removeAccents(`${last.toLowerCase()}, ${first.toLowerCase()}`);
 }
 
-export class Government {
-    readonly id!: string;
-    readonly level!: GovernmentLevel;
-    readonly name!: string;
-    readonly country!: string;
-    readonly region: string | null;
-    readonly legislature: Legislature;
-    constituencies: Array<Constituency>;
-    legislators: Array<Legislator>;
-    lookupProvider!: LegislatorLookupProvider;
-
-    constructor(data: GovernmentData) {
-        this.id = data.id;
-        this.level = data.level;
-        this.name = data.name;
-        this.country = data.country;
-        this.region = data.region;
-        this.legislature = data.legislature;
-        // TODO use optimized data structures below
-        this.constituencies = data.constituencies;
-        this.legislators = data.legislators;
-        this.lookupProvider = data.lookupProvider;
-    }
-
-    async getConsitituencyByPostal(postal: string) {
-        let [legName, conName] = await this.lookupProvider
-            .lookupLegislatorAndConsitituencyNamesByPostal(postal);
-        return this.constituencies.find(c => c.name === conName) as Constituency;
-    }
-    getLegislatorByFullName(first: string, last: string) {
-        let nameId = makeNameId(first, last);
-        return this.legislators.find(l => l.nameId === nameId) as Legislator;
-    }
-    searchLegistlatorsByPartialNames(partial: string) {
-        return new Array<Legislator>(); // TODO implement
-    }
+export function makeConstituencyNameId(name: string): string {
+    return removeAccents(name.trim().toLowerCase()).replace(/\.|\'/g, '').replace(/\s|—|—'/g, '-'); // many dash types
 }
 
+function removeAccents(str: string): string {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}

@@ -1,7 +1,6 @@
 import { Government } from "./models";
 
-// TODO include source URLs
-// TODO allow navigation from Constituency to Legislator (and configure JSON.stringify)
+// TODO next allow navigation from Constituency to Legislator and vice versa
 
 // --- Government and Legislature ---
 
@@ -22,9 +21,10 @@ export type GovernmentData = {
     country: string
     region: string | null
     legislature: Legislature
+    expectedConstituencies: number
     constituencies: Array<Constituency>
     legislators: Array<Legislator>
-    lookupProvider: LegislatorLookupProvider
+    lookupProvider: LegislatorLookupProvider // TODO next remove this from here, pass it to Government constructor
 }
 
 export type Legislature = {
@@ -52,16 +52,17 @@ export type Legislator = {
     email: string
     addresses: Array<TypedAddress>
     urls: LegislatorURLs
-    constituency: Constituency | null
+    constituencyNameId: string
 }
 
 export type Constituency = {
     id: string
+    nameId: string
     name: string
     country: string
     region: string
     municipality: string | null
-    legislator: Legislator | null
+    legislatorNameId: string
 }
 
 export type TypedAddress = {
