@@ -90,8 +90,6 @@ async function checkFederalGovernment() {
         console.log("No issues found");
     }
 
-    console.log(`Found constituency ${cons.name}`);
-
 }
 
 (async () => {

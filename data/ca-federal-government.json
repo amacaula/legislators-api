@@ -3406,7 +3406,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "rene.arseneault@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -3674,7 +3674,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Conservative",
-      "email": "",
+      "email": "Tony.Baldinelli@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -3696,7 +3696,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/tony-baldinelli(30330)"
+        "contact": "https://www.ourcommons.ca/members/en/tony-baldinelli(30330)",
+        "website": "http://www.tonybaldinellimp.ca"
       },
       "constituencyNameId": "niagara-falls"
     },
@@ -4153,7 +4154,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "chris.bittle@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -4169,7 +4170,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/chris-bittle(88934)"
+        "contact": "https://www.ourcommons.ca/members/en/chris-bittle(88934)",
+        "website": "http://chrisbittle.libparl.ca"
       },
       "constituencyNameId": "st-catharines"
     },
@@ -4538,7 +4540,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Conservative",
-      "email": "",
+      "email": "john.brassard@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -4554,7 +4556,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/john-brassard(88674)"
+        "contact": "https://www.ourcommons.ca/members/en/john-brassard(88674)",
+        "website": "http://johnbrassard.com"
       },
       "constituencyNameId": "barrie-innisfil"
     },
@@ -4936,7 +4939,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Conservative",
-      "email": "",
+      "email": "adam.chambers@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -4958,7 +4961,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/adam-chambers(110649)"
+        "contact": "https://www.ourcommons.ca/members/en/adam-chambers(110649)",
+        "website": "http://adamchambersmp.ca"
       },
       "constituencyNameId": "simcoe-north"
     },
@@ -5066,7 +5070,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "shaun.chen@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -5082,7 +5086,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/shaun-chen(88953)"
+        "contact": "https://www.ourcommons.ca/members/en/shaun-chen(88953)",
+        "website": "http://shaunchen.libparl.ca"
       },
       "constituencyNameId": "scarborough-north"
     },
@@ -5586,7 +5591,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Bloc Québécois",
-      "email": "",
+      "email": "Caroline.Desbiens@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -5651,7 +5656,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "NDP",
-      "email": "",
+      "email": "blake.desjarlais@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -5667,7 +5672,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/blake-desjarlais(110889)"
+        "contact": "https://www.ourcommons.ca/members/en/blake-desjarlais(110889)",
+        "website": "http://blakedesjarlais.ndp.ca"
       },
       "constituencyNameId": "edmonton-griesbach"
     },
@@ -5710,7 +5716,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "anju.dhillon@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -5726,7 +5732,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/anju-dhillon(88453)"
+        "contact": "https://www.ourcommons.ca/members/en/anju-dhillon(88453)",
+        "website": "http://anjudhillon.libparl.ca/?lang=en"
       },
       "constituencyNameId": "dorval-lachine-lasalle"
     },
@@ -5940,7 +5947,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "emmanuel.dubourg@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -5956,7 +5963,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/emmanuel-dubourg(84660)"
+        "contact": "https://www.ourcommons.ca/members/en/emmanuel-dubourg(84660)",
+        "website": "http://emmanueldubourg.libparl.ca/?lang=en"
       },
       "constituencyNameId": "bourassa"
     },
@@ -5999,7 +6007,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "terry.duguid@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -6015,7 +6023,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/terry-duguid(31119)"
+        "contact": "https://www.ourcommons.ca/members/en/terry-duguid(31119)",
+        "website": "http://terryduguid.libparl.ca"
       },
       "constituencyNameId": "winnipeg-south"
     },
@@ -6538,7 +6547,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "peter.fonseca@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -6554,7 +6563,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/peter-fonseca(71692)"
+        "contact": "https://www.ourcommons.ca/members/en/peter-fonseca(71692)",
+        "website": "http://peterfonseca.libparl.ca"
       },
       "constituencyNameId": "mississauga-east-cooksville"
     },
@@ -7121,7 +7131,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Conservative",
-      "email": "",
+      "email": "joel.godin@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -8409,7 +8419,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "Irek.Kusmierczyk@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -8425,7 +8435,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/irek-kusmierczyk(71820)"
+        "contact": "https://www.ourcommons.ca/members/en/irek-kusmierczyk(71820)",
+        "website": "http://irekkusmierczyk.libparl.ca"
       },
       "constituencyNameId": "windsor-tecumseh"
     },
@@ -8587,7 +8598,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "kevin.lamoureux@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -8603,7 +8614,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/kevin-lamoureux(30552)"
+        "contact": "https://www.ourcommons.ca/members/en/kevin-lamoureux(30552)",
+        "website": "http://www.mpkevin.ca"
       },
       "constituencyNameId": "winnipeg-north"
     },
@@ -8616,7 +8628,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Conservative",
-      "email": "",
+      "email": "melissa.lantsman@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -8632,7 +8644,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/melissa-lantsman(110665)"
+        "contact": "https://www.ourcommons.ca/members/en/melissa-lantsman(110665)",
+        "website": "http://melissalantsmanmp.ca"
       },
       "constituencyNameId": "thornhill"
     },
@@ -8645,7 +8658,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "viviane.lapointe@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -8661,7 +8674,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/viviane-lapointe(110663)"
+        "contact": "https://www.ourcommons.ca/members/en/viviane-lapointe(110663)",
+        "website": "http://vivianelapointe.libparl.ca"
       },
       "constituencyNameId": "sudbury"
     },
@@ -8828,7 +8842,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "diane.lebouthillier@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -8862,7 +8876,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/diane-lebouthillier(88460)"
+        "contact": "https://www.ourcommons.ca/members/en/diane-lebouthillier(88460)",
+        "website": "http://dianelebouthillier.libparl.ca/?lang=en"
       },
       "constituencyNameId": "gaspesie-les-iles-de-la-madeleine"
     },
@@ -8875,7 +8890,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Conservative",
-      "email": "",
+      "email": "Richard.Lehoux@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -9000,7 +9015,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Conservative",
-      "email": "",
+      "email": "leslyn.lewis@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -9016,7 +9031,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/leslyn-lewis(88958)"
+        "contact": "https://www.ourcommons.ca/members/en/leslyn-lewis(88958)",
+        "website": "http://leslynlewismp.ca"
       },
       "constituencyNameId": "haldimand-norfolk"
     },
@@ -9243,7 +9259,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "lawrence.macaulay@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -9259,7 +9275,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/lawrence-macaulay(33)"
+        "contact": "https://www.ourcommons.ca/members/en/lawrence-macaulay(33)",
+        "website": "http://lawrencemacaulay.libparl.ca"
       },
       "constituencyNameId": "cardigan"
     },
@@ -9692,7 +9709,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "ken.mcdonald@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -9708,7 +9725,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/ken-mcdonald(88283)"
+        "contact": "https://www.ourcommons.ca/members/en/ken-mcdonald(88283)",
+        "website": "http://kenmcdonald.libparl.ca"
       },
       "constituencyNameId": "avalon"
     },
@@ -10192,7 +10210,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Conservative",
-      "email": "",
+      "email": "Rob.Morrison@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -10208,7 +10226,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/rob-morrison(105807)"
+        "contact": "https://www.ourcommons.ca/members/en/rob-morrison(105807)",
+        "website": "http://robmorrisonmp.ca"
       },
       "constituencyNameId": "kootenay-columbia"
     },
@@ -11065,7 +11084,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Conservative",
-      "email": "",
+      "email": "anna.roberts@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -11386,7 +11405,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "yaara.saks@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -11402,7 +11421,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/yaara-saks(107099)"
+        "contact": "https://www.ourcommons.ca/members/en/yaara-saks(107099)",
+        "website": "http://yaarasaks.libparl.ca"
       },
       "constituencyNameId": "york-centre"
     },
@@ -11415,7 +11435,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "darrell.samson@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -11431,7 +11451,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/darrell-samson(88333)"
+        "contact": "https://www.ourcommons.ca/members/en/darrell-samson(88333)",
+        "website": "http://darrellsamson.libparl.ca"
       },
       "constituencyNameId": "sackville-preston-chezzetcook"
     },
@@ -12000,7 +12021,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Conservative",
-      "email": "",
+      "email": "clifford.small@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -12599,7 +12620,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Bloc Québécois",
-      "email": "",
+      "email": "Denis.Trudel@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -12615,7 +12636,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/denis-trudel(88530)"
+        "contact": "https://www.ourcommons.ca/members/en/denis-trudel(88530)",
+        "website": "http://denistrudel.quebec"
       },
       "constituencyNameId": "longueuil-saint-hubert"
     },
@@ -12808,7 +12830,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "dan.vandal@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -12824,7 +12846,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/dan-vandal(89045)"
+        "contact": "https://www.ourcommons.ca/members/en/dan-vandal(89045)",
+        "website": "http://danvandal.libparl.ca"
       },
       "constituencyNameId": "saint-boniface-saint-vital"
     },
@@ -12867,7 +12890,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Conservative",
-      "email": "",
+      "email": "Karen.Vecchio@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -12883,7 +12906,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/karen-vecchio(88742)"
+        "contact": "https://www.ourcommons.ca/members/en/karen-vecchio(88742)",
+        "website": "http://www.karenvecchiomp.ca"
       },
       "constituencyNameId": "elgin-middlesex-london"
     },
@@ -13111,7 +13135,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Independent",
-      "email": "",
+      "email": "kevin.vuong@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -13127,7 +13151,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/kevin-vuong(110654)"
+        "contact": "https://www.ourcommons.ca/members/en/kevin-vuong(110654)",
+        "website": "http://www.kevinvuong.com"
       },
       "constituencyNameId": "spadina-fort-york"
     },
@@ -13356,7 +13381,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Conservative",
-      "email": "",
+      "email": "John.Williamson@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -13372,7 +13397,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/john-williamson(71323)"
+        "contact": "https://www.ourcommons.ca/members/en/john-williamson(71323)",
+        "website": "http://www.johnwilliamsonmp.ca"
       },
       "constituencyNameId": "new-brunswick-southwest"
     },
@@ -13516,7 +13542,7 @@
       "isCurrent": true,
       "fromDate": "2021-09-20",
       "party": "Liberal",
-      "email": "",
+      "email": "Sameer.Zuberi@parl.gc.ca",
       "addresses": [
         {
           "type": "central",
@@ -13532,7 +13558,8 @@
         }
       ],
       "urls": {
-        "contact": "https://www.ourcommons.ca/members/en/sameer-zuberi(54157)"
+        "contact": "https://www.ourcommons.ca/members/en/sameer-zuberi(54157)",
+        "website": "https://sameerzuberi.libparl.ca/?lang=en"
       },
       "constituencyNameId": "pierrefonds-dollard"
     }

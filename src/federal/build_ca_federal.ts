@@ -1,13 +1,21 @@
-import { parse, HTMLElement, Node, TextNode } from 'node-html-parser';
-const fs = require("fs");
 import {
     Legislator, LegislatorURLs, TypedAddress, AddressType, Constituency,
     GovernmentData, GovernmentLevel, Legislature
 } from '../types';
-import { MPlookupProvider } from './lookups';
 import { Government, makeNameId, makeConstituencyNameId, defaultLegislator, defaultConstituency, standardizeName } from '../models';
+import { MPlookupProvider } from './lookups';
+
+// For reading/parsing data in various formats
+import { parse, HTMLElement, Node, TextNode } from 'node-html-parser';
+const fs = require("fs");
 const { XMLParser } = require("fast-xml-parser");
-const fetch = require('node-fetch');
+
+// Caching version of node-fetch
+import { fetchBuilder, FileSystemCache } from 'node-fetch-cache';
+const fetch = fetchBuilder.withCache(new FileSystemCache({
+    cacheDirectory: 'cache', // Specify where to keep the cache. 
+    ttl: 1000 * 60 * 60 * 4, // Time to live in ms (4 hrs)
+}));
 
 // TODO separate capture and consume types
 
@@ -142,7 +150,7 @@ async function processContactData(legislatorsByNameId: Map<string, Legislator>) 
         if (!contactURL) return Promise.resolve();
 
         // TODO next implement a cache of all fetched data to avoid repeated fetches
-        return fetch(contactURL, { insecureHTTPParser: false })
+        return fetch(contactURL) // , { insecureHTTPParser: false })
             .then((res: any) => {
                 if (res.ok) {
                     return res.text();

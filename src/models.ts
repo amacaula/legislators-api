@@ -96,9 +96,13 @@ export function makeNameId(first: string, last: string): string {
 }
 
 export function makeConstituencyNameId(name: string): string {
-    return removeAccents(name.trim().toLowerCase()).replace(/\.|\'/g, '').replace(/\s|—|—'/g, '-'); // many dash types
+    return removeSpecialChars(removeAccents(name.trim().toLowerCase()));
 }
 
 function removeAccents(str: string): string {
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function removeSpecialChars(str: string): string {
+    return str.replace(/\.|\'/g, '').replace(/\s|—|—'/g, '-') // many dash types
 }
