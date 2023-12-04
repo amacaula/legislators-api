@@ -1,7 +1,9 @@
 import {
-    AddressType, GovernmentLevel, GovernmentData, Constituency,
+    AddressType, GovernmentLevel, GovernmentData, GovernmentMetadata, isGovernmentData, Constituency,
     Legislature, Legislator, LegislatorURLs, LegislatorLookupProvider
 } from "./types";
+
+// TODO next replace id, nameId with surrogateKey and naturalKey?
 
 export class Government {
     readonly id!: string;
@@ -17,7 +19,8 @@ export class Government {
     legislatorsByNameId: Map<string, Legislator>;
     lookupProvider!: LegislatorLookupProvider;
 
-    constructor(data: GovernmentData) {
+    // Constructor works with either of two input data types
+    constructor(data: GovernmentMetadata | GovernmentData) {
         this.id = data.id;
         this.level = data.level;
         this.name = data.name;
@@ -26,11 +29,30 @@ export class Government {
         this.legislature = data.legislature;
         this.expectedConstituencies = data.expectedConstituencies;
         // TODO use optimized data structures below
-        this.constituencies = data.constituencies;
-        this.constituenciesByNameId = new Map<string, Constituency>();
-        this.legislators = data.legislators;
-        this.legislatorsByNameId = new Map<string, Legislator>();
         this.lookupProvider = data.lookupProvider;
+        this.legislatorsByNameId = new Map<string, Legislator>();
+        this.constituenciesByNameId = new Map<string, Constituency>();
+
+        if (isGovernmentData(data)) {
+            this.legislators = data.legislators;
+            this.constituencies = data.constituencies;
+            this.legislators.forEach(l => this.legislatorsByNameId.set(l.nameId, l));
+            this.constituencies.forEach(l => this.constituenciesByNameId.set(l.nameId, l));
+        } else {
+            this.legislators = new Array<Legislator>();
+            this.constituencies = new Array<Constituency>();
+        }
+    }
+
+    finish(): void {
+        this.legislatorsByNameId.forEach(l => { this.legislators.push(l) });
+        this.constituenciesByNameId.forEach(c => {
+            if (c.legislatorNameId !== "VACANT") {
+                this.constituencies.push(c);
+            } else {
+                this.constituenciesByNameId.delete(c.nameId);
+            }
+        });
     }
 
     asGovernmentData(): GovernmentData {
@@ -52,8 +74,9 @@ export class Government {
     }
 }
 
-// ------------------------- functions -------------------------
+// ------------------------- Legislators and Constituencies -------------------------
 
+// TODO next allow navigation from Constituency to Legislator and vice versa by making them classes
 // TODO create separate legislators.ts file and leave only federal code here
 
 export function defaultLegislator(first: string, last: string): Legislator {

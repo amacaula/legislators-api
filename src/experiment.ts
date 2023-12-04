@@ -14,8 +14,7 @@ function fetchContact(contactURL: string): Promise<Array<string>> {
             if (res.ok) {
                 return res.text();
             } else {
-                console.warn(`fetchContact: ${contactURL} -> HTTP error: ${res.status}`);
-                return
+                return Promise.reject(`fetchContact: ${contactURL} -> HTTP error: ${res.status}`)
             }
         })
         .then((body: any) => {

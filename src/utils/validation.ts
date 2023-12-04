@@ -1,6 +1,6 @@
 import { getGovernmentbyId } from '../legislator_api/government_finder';
 import { Government } from '../models';
-import { Legislator, AddressType, Constituency } from '../types';
+import { Legislator, AddressType, Constituency, GovernmentData } from '../types';
 
 export type KeyedIssue = {
     key: string
@@ -16,7 +16,7 @@ export function makeIssue(key: string, fieldName: string, issue: string): KeyedI
     }
 }
 
-export function validateGovernment(gov: Government): KeyedIssue[] {
+export function validateGovernment(gov: Government | GovernmentData): KeyedIssue[] {
     let legislators = gov.legislators;
     let constituencyIds = gov.constituencies.map(c => c.nameId);
     let issues = new Array<KeyedIssue>();
@@ -92,7 +92,7 @@ async function checkFederalGovernment() {
 
 }
 
-(async () => {
+/* (async () => {
     console.log("Checking cached government data...");
     await checkFederalGovernment();
-})();
+})(); */

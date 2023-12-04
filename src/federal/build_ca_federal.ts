@@ -1,8 +1,11 @@
 import {
     Legislator, LegislatorURLs, TypedAddress, AddressType, Constituency,
-    GovernmentData, GovernmentLevel, Legislature
+    GovernmentData, GovernmentMetadata, GovernmentLevel, Legislature
 } from '../types';
-import { Government, makeNameId, makeConstituencyNameId, defaultLegislator, defaultConstituency, standardizeName } from '../models';
+import {
+    Government, makeNameId, makeConstituencyNameId, defaultLegislator,
+    defaultConstituency, standardizeName
+} from '../models';
 import { MPlookupProvider } from './lookups';
 
 // For reading/parsing data in various formats
@@ -12,14 +15,26 @@ const { XMLParser } = require("fast-xml-parser");
 
 // Caching version of node-fetch
 import { fetchBuilder, FileSystemCache } from 'node-fetch-cache';
-const fetch = fetchBuilder.withCache(new FileSystemCache({
-    cacheDirectory: 'cache', // Specify where to keep the cache. 
-    ttl: 1000 * 60 * 60 * 4, // Time to live in ms (4 hrs)
-}));
 
 // TODO separate capture and consume types
 
 // ------------------------- types and globals -------------------------
+
+// Configuration for building the government data
+const CONFIG = {
+    cacheTTLhours: 24 * 7, // 7 days
+    delay: 10000, // ms between fetches
+    maxLegislators: 0 // 0 means no limit
+}
+
+const fetch = fetchBuilder.withCache(new FileSystemCache({
+    cacheDirectory: 'cache', // Specify where to keep the cache. 
+    ttl: 1000 * 60 * 60 * CONFIG.cacheTTLhours, // Time to live in ms (7 days)
+}));
+
+function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 // For iterating over children nodes of an HTMLElement
 type HTMLDocumentCursor = {
@@ -29,7 +44,7 @@ type HTMLDocumentCursor = {
 
 const HOUSE_OF_COMMONS_PHYSICAL_ADDRESS = "House of Commons\nOttawa, Ontario\nCanada\nK1A 0A6";
 
-const governmentData: GovernmentData = {
+const governmentMetadata: GovernmentMetadata = {
     id: "ca.federal.houseOfCommons",
     level: GovernmentLevel.Federal,
     name: "House of Commons",
@@ -50,8 +65,6 @@ const governmentData: GovernmentData = {
         email: "info@parl.gc.ca"
     } as Legislature,
     expectedConstituencies: 338,
-    constituencies: new Array<Constituency>(),
-    legislators: new Array<Legislator>(),
     lookupProvider: MPlookupProvider
 }
 
@@ -59,50 +72,35 @@ const STOP_TAGS = ["H3", "DIV", "P"];
 
 // ----------------------- Main functions -----------------------
 
-export async function getGovernment(): Promise<Government> {
-    let government = new Government(governmentData);
+export async function buildGovernment(metadata: GovernmentMetadata = governmentMetadata): Promise<Government> {
+    let government = new Government(metadata);
 
-    government.legislators = await getAllLegislators();
-    government.legislators.forEach(l => government.legislatorsByNameId.set(l.nameId, l))// TODO autoindex
+    let legByNameId = government.legislatorsByNameId;
+    await addLegislators(legByNameId);
+    await addContactLinks(legByNameId);
+    await processContactData(legByNameId);
 
-    government.constituencies = await getAllConstituencies(government.legislatorsByNameId); // TODO pass smell
-    government.constituencies.forEach(c => government.constituenciesByNameId.set(c.nameId, c))// TODO autoindex
-    // TODO connect the two up by their ids
+    let conByNameId = government.constituenciesByNameId;
+    await addConstituencies(conByNameId, legByNameId);
+    await addConstituencyIds(conByNameId, legByNameId);
+
+    government.finish();
     return government;
 }
-
-/**
- * Reads all general data about legislators from the following sources:
- * - data/addresses-members-of-parliament.html
- * - data/parliament-members.html
- * @returns 
- */
-export async function getAllLegislators(): Promise<Array<Legislator>> {
-    let legislatorsByNameId = new Map<string, Legislator>();
-    await addLegislators(legislatorsByNameId);
-    await addContactLinks(legislatorsByNameId);
-    await processContactData(legislatorsByNameId);
-    // TODO get all pictures from https://www.ourcommons.ca/Members/en/constituencies
-    return Array.from(legislatorsByNameId.values());
-}
-
-async function getAllConstituencies(legislatorsByNameId: Map<string, Legislator>): Promise<Array<Constituency>> {
-    let constituenciesByNameId = new Map<string, Constituency>();
-    await addConstituencies(constituenciesByNameId, legislatorsByNameId);
-    await addConstituencyIds(constituenciesByNameId, legislatorsByNameId);
-    return Array.from(constituenciesByNameId.values());
-}
-
 
 // Process the HTML file containing the list of all legislators addresses
 async function addLegislators(legislatorsByNameId: Map<string, Legislator>) {
     const addressesHTML = fs.readFileSync("data/addresses-members-of-parliament.html", "utf8"); // TODO fetch live
     const root = parse(addressesHTML);
 
-    const blocks = root.querySelectorAll("div.col-lg-4")
+    let blocks = root.querySelectorAll("div.col-lg-4")
         .filter(div => (div.childNodes[1] as HTMLElement)?.tagName === "H2");
+    if (CONFIG.maxLegislators > 0) {
+        console.warn(`Max legislators to process: ${CONFIG.maxLegislators}`);
+        blocks = blocks.slice(0, CONFIG.maxLegislators);
+    }
     console.log("HTML blocks to process: " + blocks.length);
-    blocks.map(htmlBlockToLegislator).forEach((l: Legislator) => {
+    blocks.map(htmlBlockToLegislator).forEach((l: Legislator, index: number) => {
         legislatorsByNameId.set(l.nameId, l);
     });
     console.info(`Number of legislators collected: ${legislatorsByNameId.size}`);
@@ -113,7 +111,9 @@ function addConstituencies(constituenciesByNameId: Map<string, Constituency>, le
     const xml = fs.readFileSync("data/parliament-members.xml", "utf8");
     const parser = new XMLParser();
     let xmlData = parser.parse(xml);
-    xmlData.ArrayOfMemberOfParliament.MemberOfParliament.forEach((mp: XMLMemberOfParliament) => {
+    let mps = xmlData.ArrayOfMemberOfParliament.MemberOfParliament;
+    if (CONFIG.maxLegislators > 0) mps = mps.slice(0, CONFIG.maxLegislators);
+    mps.forEach((mp: XMLMemberOfParliament) => {
         mergeInConstituencyData(constituenciesByNameId, legislatorsByNameId, mp);
     });
 }
@@ -122,7 +122,10 @@ function addConstituencies(constituenciesByNameId: Map<string, Constituency>, le
 function addContactLinks(legislatorsByNameId: Map<string, Legislator>) {
     const searchHTML = fs.readFileSync("data/Current-Members-of-Parliament-Search.html", "utf8"); // TODO fetch live
     const searchRoot = parse(searchHTML);
-    const tiles = searchRoot.querySelectorAll("div.ce-mip-mp-tile-container");
+    let tiles = searchRoot.querySelectorAll("div.ce-mip-mp-tile-container");
+    if (CONFIG.maxLegislators > 0) {
+        tiles = tiles.slice(0, CONFIG.maxLegislators);
+    }
     console.log(`Number of tiles to process: ${tiles.length}`);
     tiles.forEach(tile => {
         let href = tile.querySelector("a")?.getAttribute("href") as string;
@@ -139,29 +142,34 @@ function addContactLinks(legislatorsByNameId: Map<string, Legislator>) {
 async function processContactData(legislatorsByNameId: Map<string, Legislator>) {
     let promises = Array<Promise<void>>();
     let count = 0;
-    legislatorsByNameId.forEach((leg, nameId) => {
-        promises.push(fetchAndMergeDataFromContactLink(leg));
-    });
-    let results = await Promise.allSettled(promises);
-    console.log(`contact data fetch: ${results.length} attempts with ${results.filter(r => r.status === "rejected").length} failures`);
+    let failures = 0;
+    for (let [nameId, leg] of legislatorsByNameId) {
+        await fetchAndMergeDataFromContactLink(leg);
+        if (count % 5 == 0) console.log(`fetchAndMergeDataFromContactLink: processed ${count} failures ${failures}...`);
+        await delay(CONFIG.delay);
+    }
+    // legislatorsByNameId.forEach((leg, nameId) => {
+    // promises.push(await fetchAndMergeDataFromContactLink(leg);
+    // });
+    // let results = await Promise.allSettled(promises);
+    // console.log(`contact data fetch: ${results.length} attempts with ${results.filter(r => r.status === "rejected").length} failures`);
 
     async function fetchAndMergeDataFromContactLink(leg: Legislator): Promise<void> {
         let contactURL = leg.urls["contact"];
+        console.log(`fetchAndMergeDataFromContactLink: processing ${contactURL}`);
         if (!contactURL) return Promise.resolve();
 
-        // TODO next implement a cache of all fetched data to avoid repeated fetches
-        return fetch(contactURL) // , { insecureHTTPParser: false })
+        return fetch(contactURL) // , { insecureHTTPParser: false }) not needed TODO remove
             .then((res: any) => {
                 if (res.ok) {
                     return res.text();
                 } else {
-                    console.warn(`fetchAndMergeDataFromContactLink: ${contactURL} -> HTTP error: ${res.status}`);
-                    return
+                    failures++;
+                    return Promise.reject(`fetchAndMergeDataFromContactLink: ${contactURL} -> HTTP error: ${res.status}`);
                 }
             })
             .then((body: any) => {
                 count++;
-                if (count % 20 == 0) console.log(`fetchAndMergeDataFromContactLink: processed ${count} contacts...`);
                 const root = parse(body);
                 const blocks = root.querySelectorAll("div").filter(a => {
                     // div contains h4 element with text "Email"
@@ -202,7 +210,8 @@ async function addConstituencyIds(constituenciesByNameId: Map<string, Constituen
         if (cons !== undefined) {
             cons.id = id;
         } else {
-            console.warn(`NOT FOUND constituency ${name} with id: ${nameId}`);
+            if (CONFIG.maxLegislators <= 0)
+                console.warn(`NOT FOUND constituency ${name} with id: ${nameId}`);
             // TODO handle Durham creating constituency with no legislator (its vacant)
         }
     });

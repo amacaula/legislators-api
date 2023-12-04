@@ -1,7 +1,5 @@
 import { Government } from "./models";
 
-// TODO next allow navigation from Constituency to Legislator and vice versa
-
 // --- Government and Legislature ---
 
 export enum GovernmentLevel {
@@ -14,7 +12,7 @@ export type LegislatorLookupProvider = {
     lookupLegislatorAndConsitituencyNamesByPostal: (postal: string) => Promise<[string, string]>
 }
 
-export type GovernmentData = {
+export type GovernmentMetadata = {
     id: string
     level: GovernmentLevel
     name: string
@@ -22,9 +20,16 @@ export type GovernmentData = {
     region: string | null
     legislature: Legislature
     expectedConstituencies: number
+    lookupProvider: LegislatorLookupProvider
+}
+
+export type GovernmentData = GovernmentMetadata & {
     constituencies: Array<Constituency>
     legislators: Array<Legislator>
-    lookupProvider: LegislatorLookupProvider // TODO next remove this from here, pass it to Government constructor
+}
+
+export function isGovernmentData(data: GovernmentData | GovernmentMetadata): data is GovernmentData {
+    return (data as GovernmentData).constituencies !== undefined;
 }
 
 export type Legislature = {
