@@ -28,7 +28,6 @@ export class Government {
         this.region = data.region;
         this.legislature = data.legislature;
         this.expectedConstituencies = data.expectedConstituencies;
-        // TODO use optimized data structures below
         this.lookupProvider = data.lookupProvider;
         this.legislatorsByNameId = new Map<string, Legislator>();
         this.constituenciesByNameId = new Map<string, Constituency>();
@@ -44,15 +43,19 @@ export class Government {
         }
     }
 
-    finish(): void {
+    finish(prune: boolean): void {
         this.legislatorsByNameId.forEach(l => { this.legislators.push(l) });
-        this.constituenciesByNameId.forEach(c => {
-            if (c.legislatorNameId !== "VACANT") {
-                this.constituencies.push(c);
-            } else {
-                this.constituenciesByNameId.delete(c.nameId);
-            }
-        });
+        if (!prune) {
+            this.constituenciesByNameId.forEach(l => { this.constituencies.push(l) });
+        } else {
+            this.constituenciesByNameId.forEach(c => {
+                if (c.legislatorNameId !== "VACANT") {
+                    this.constituencies.push(c);
+                } else {
+                    this.constituenciesByNameId.delete(c.nameId);
+                }
+            });
+        }
     }
 
     asGovernmentData(): GovernmentData {
@@ -70,14 +73,13 @@ export class Government {
         return this.legislators.find(l => l.nameId === nameId) as Legislator;
     }
     searchLegistlatorsByPartialNames(partial: string) {
-        return new Array<Legislator>(); // TODO implement
+        return new Array<Legislator>(); // TODO later implement
     }
 }
 
 // ------------------------- Legislators and Constituencies -------------------------
 
 // TODO next allow navigation from Constituency to Legislator and vice versa by making them classes
-// TODO create separate legislators.ts file and leave only federal code here
 
 export function defaultLegislator(first: string, last: string): Legislator {
     return {
@@ -101,12 +103,12 @@ export function defaultConstituency(name: string): Constituency {
     }
 }
 
+// TODO next update to use remove accents function below
 export function standardizeName(name: string): string {
     // Remove any trailing initials
     if (name.endsWith(".")) return name.substring(0, name.length - 3);
-    // TODO replace accented letters with unaccented
-    // TODO replace double spaces with one space
-    // TODO generalize for any order of first and last names
+    // TODO next replace double spaces with one space
+    // TODO later generalize for any order of first and last names
     return name;
 }
 

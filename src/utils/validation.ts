@@ -29,7 +29,6 @@ export function validateGovernment(gov: Government | GovernmentData): KeyedIssue
         });
     }
 
-    // TODO check validate data before updating the cache that serves graphql queries
     legislators.forEach(leg => {
         // Legislator with no id
         if (!leg.id) {

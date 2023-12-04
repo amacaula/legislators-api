@@ -16,15 +16,17 @@ const { XMLParser } = require("fast-xml-parser");
 // Caching version of node-fetch
 import { fetchBuilder, FileSystemCache } from 'node-fetch-cache';
 
-// TODO separate capture and consume types
+// TODO later separate data capture and API consume types
 
 // ------------------------- types and globals -------------------------
 
 // Configuration for building the government data
+// TODO next pass config in as parameter to buildGovernment and make this the default. Create GovernmentBuilder object to hold config
 const CONFIG = {
     cacheTTLhours: 24 * 7, // 7 days
-    delay: 10000, // ms between fetches
-    maxLegislators: 0 // 0 means no limit
+    delay: 0, // ms between fetches
+    maxLegislators: 0, // 0 means no limit
+    pruneUnusedConstituencies: false // remove any constituencies without a legislator
 }
 
 const fetch = fetchBuilder.withCache(new FileSystemCache({
@@ -84,13 +86,13 @@ export async function buildGovernment(metadata: GovernmentMetadata = governmentM
     await addConstituencies(conByNameId, legByNameId);
     await addConstituencyIds(conByNameId, legByNameId);
 
-    government.finish();
+    government.finish(CONFIG.pruneUnusedConstituencies);
     return government;
 }
 
 // Process the HTML file containing the list of all legislators addresses
 async function addLegislators(legislatorsByNameId: Map<string, Legislator>) {
-    const addressesHTML = fs.readFileSync("data/addresses-members-of-parliament.html", "utf8"); // TODO fetch live
+    const addressesHTML = fs.readFileSync("data/addresses-members-of-parliament.html", "utf8"); // TODO soon fetch live
     const root = parse(addressesHTML);
 
     let blocks = root.querySelectorAll("div.col-lg-4")
@@ -120,7 +122,7 @@ function addConstituencies(constituenciesByNameId: Map<string, Constituency>, le
 
 // Process the search HTML to get links to contact data (for email, website, etc)
 function addContactLinks(legislatorsByNameId: Map<string, Legislator>) {
-    const searchHTML = fs.readFileSync("data/Current-Members-of-Parliament-Search.html", "utf8"); // TODO fetch live
+    const searchHTML = fs.readFileSync("data/Current-Members-of-Parliament-Search.html", "utf8"); // TODO soon fetch live
     const searchRoot = parse(searchHTML);
     let tiles = searchRoot.querySelectorAll("div.ce-mip-mp-tile-container");
     if (CONFIG.maxLegislators > 0) {
@@ -193,7 +195,7 @@ async function processContactData(legislatorsByNameId: Map<string, Legislator>) 
 }
 
 async function addConstituencyIds(constituenciesByNameId: Map<string, Constituency>, legislatorsByNameId: Map<string, Legislator>) {
-    const conListHTML = fs.readFileSync("data/Current Constituencies.html", "utf8"); // TODO fetch live
+    const conListHTML = fs.readFileSync("data/Current Constituencies.html", "utf8"); // TODO soon fetch live
     const searchRoot = parse(conListHTML);
     const tiles = searchRoot.querySelectorAll("a.mip-constituency-tile");
     console.log(`Number of tiles to process: ${tiles.length}`);
@@ -212,7 +214,6 @@ async function addConstituencyIds(constituenciesByNameId: Map<string, Constituen
         } else {
             if (CONFIG.maxLegislators <= 0)
                 console.warn(`NOT FOUND constituency ${name} with id: ${nameId}`);
-            // TODO handle Durham creating constituency with no legislator (its vacant)
         }
     });
 }

@@ -7,7 +7,7 @@ import { MPlookupProvider } from "../federal/lookups";
 let ca_federal = new Government(require("../../../data/ca-federal-government.json") as GovernmentData);
 ca_federal.lookupProvider = MPlookupProvider;
 
-// TODO update so that files are read in only as needed and not all up front
+// TODO later update so that files are read in only as needed and not all up front
 
 const governmentsById = new Map<string, Government>([
     ["ca.federal", ca_federal],
@@ -25,7 +25,7 @@ export async function getGovernmentbyId(id: string) {
     }
 }
 
-// TODO finish GetGovernmentProvider implementation below
+// TODO later finish GetGovernmentProvider implementation below
 
 /*
 export type GovernmentProvider = {

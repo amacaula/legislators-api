@@ -1,8 +1,8 @@
 # legislators-api
 
-TODO switch to "modules" from "commonjs"
+TODO later switch to "modules" from "commonjs"
 
-TODO separate README.md for scraping vs the API
+TODO later separate README.md for scraping vs the API
 
 # Members of parliament
 
