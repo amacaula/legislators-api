@@ -1,6 +1,6 @@
 import {
-    Legislator, LegislatorURLs, TypedAddress, AddressType, Constituency,
-    GovernmentData, GovernmentMetadata, GovernmentLevel, Legislature
+    LegislatorData, LegislatorURLs, TypedAddress, AddressType, ConstituencyData,
+    GovernmentBuilderFactory, GovernmentData, GovernmentMetadata, GovernmentLevel, Legislature
 } from '../types';
 import {
     Government, makeNameId, makeConstituencyNameId, defaultLegislator,
@@ -19,20 +19,6 @@ import { fetchBuilder, FileSystemCache } from 'node-fetch-cache';
 // TODO later separate data capture and API consume types
 
 // ------------------------- types and globals -------------------------
-
-// Configuration for building the government data
-// TODO next pass config in as parameter to buildGovernment and make this the default. Create GovernmentBuilder object to hold config
-const CONFIG = {
-    cacheTTLhours: 24 * 7, // 7 days
-    delay: 0, // ms between fetches
-    maxLegislators: 0, // 0 means no limit
-    pruneUnusedConstituencies: false // remove any constituencies without a legislator
-}
-
-const fetch = fetchBuilder.withCache(new FileSystemCache({
-    cacheDirectory: 'cache', // Specify where to keep the cache. 
-    ttl: 1000 * 60 * 60 * CONFIG.cacheTTLhours, // Time to live in ms (7 days)
-}));
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -72,150 +58,176 @@ const governmentMetadata: GovernmentMetadata = {
 
 const STOP_TAGS = ["H3", "DIV", "P"];
 
-// ----------------------- Main functions -----------------------
+const DEFAULT_CONFIG: any = {
+    cacheTTLhours: 24 * 7, // 7 days
+    delay: 0, // ms between fetches
+    maxLegislators: 0, // 0 means no limit
+    pruneUnusedConstituencies: false // remove any constituencies without a legislator
+};
 
-export async function buildGovernment(metadata: GovernmentMetadata = governmentMetadata): Promise<Government> {
-    let government = new Government(metadata);
+// ----------------------- Main GovernmentBuilder -----------------------
 
-    let legByNameId = government.legislatorsByNameId;
-    await addLegislators(legByNameId);
-    await addContactLinks(legByNameId);
-    await processContactData(legByNameId);
-
-    let conByNameId = government.constituenciesByNameId;
-    await addConstituencies(conByNameId, legByNameId);
-    await addConstituencyIds(conByNameId, legByNameId);
-
-    government.finish(CONFIG.pruneUnusedConstituencies);
-    return government;
-}
-
-// Process the HTML file containing the list of all legislators addresses
-async function addLegislators(legislatorsByNameId: Map<string, Legislator>) {
-    const addressesHTML = fs.readFileSync("data/addresses-members-of-parliament.html", "utf8"); // TODO soon fetch live
-    const root = parse(addressesHTML);
-
-    let blocks = root.querySelectorAll("div.col-lg-4")
-        .filter(div => (div.childNodes[1] as HTMLElement)?.tagName === "H2");
-    if (CONFIG.maxLegislators > 0) {
-        console.warn(`Max legislators to process: ${CONFIG.maxLegislators}`);
-        blocks = blocks.slice(0, CONFIG.maxLegislators);
+export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
+    constructor() {
     }
-    console.log("HTML blocks to process: " + blocks.length);
-    blocks.map(htmlBlockToLegislator).forEach((l: Legislator, index: number) => {
-        legislatorsByNameId.set(l.nameId, l);
-    });
-    console.info(`Number of legislators collected: ${legislatorsByNameId.size}`);
-}
 
-// Process XML file containing constituency data
-function addConstituencies(constituenciesByNameId: Map<string, Constituency>, legislatorsByNameId: Map<string, Legislator>) {
-    const xml = fs.readFileSync("data/parliament-members.xml", "utf8");
-    const parser = new XMLParser();
-    let xmlData = parser.parse(xml);
-    let mps = xmlData.ArrayOfMemberOfParliament.MemberOfParliament;
-    if (CONFIG.maxLegislators > 0) mps = mps.slice(0, CONFIG.maxLegislators);
-    mps.forEach((mp: XMLMemberOfParliament) => {
-        mergeInConstituencyData(constituenciesByNameId, legislatorsByNameId, mp);
-    });
-}
-
-// Process the search HTML to get links to contact data (for email, website, etc)
-function addContactLinks(legislatorsByNameId: Map<string, Legislator>) {
-    const searchHTML = fs.readFileSync("data/Current-Members-of-Parliament-Search.html", "utf8"); // TODO soon fetch live
-    const searchRoot = parse(searchHTML);
-    let tiles = searchRoot.querySelectorAll("div.ce-mip-mp-tile-container");
-    if (CONFIG.maxLegislators > 0) {
-        tiles = tiles.slice(0, CONFIG.maxLegislators);
+    static availableGovernments(): Array<GovernmentMetadata> {
+        return [governmentMetadata];
     }
-    console.log(`Number of tiles to process: ${tiles.length}`);
-    tiles.forEach(tile => {
-        let href = tile.querySelector("a")?.getAttribute("href") as string;
-        let name = tile.querySelectorAll("div.ce-mip-mp-name")[0]?.text;
-        if (href && name) {
-            mergeInContactLink(standardizeName(name), href, legislatorsByNameId);
-        } else {
-            console.warn(`getAllLegislators: MISSING name ${name} or contact link ${href}`);
+
+    static defaultConfig: any = DEFAULT_CONFIG;
+
+    async build(metadata: GovernmentMetadata = CanadaGovernmentProvider.availableGovernments()[0],
+        config: any = {}): Promise<Government> {
+        let activeConfig = { ...CanadaGovernmentProvider.defaultConfig, ...config }
+        let government = new Government(metadata);
+        const fetch = fetchBuilder.withCache(new FileSystemCache({
+            cacheDirectory: 'cache', // Specify where to keep the cache. 
+            ttl: 1000 * 60 * 60 * activeConfig.cacheTTLhours, // Time to live in ms (7 days)
+        }));
+
+        let legByNameId = government.legislatorsByNameId;
+        await addLegislators(legByNameId);
+        await addContactLinks(legByNameId);
+        await processContactData(legByNameId);
+
+        let conByNameId = government.constituenciesByNameId;
+        await addConstituencies(conByNameId, legByNameId);
+        await addConstituencyIds(conByNameId, legByNameId);
+
+        government.finish(activeConfig.pruneUnusedConstituencies);
+        return government;
+
+        // ------- Builder steps in closure -------
+
+        // Process the HTML file containing the list of all legislators addresses
+        async function addLegislators(legislatorsByNameId: Map<string, LegislatorData>) {
+            const addressesHTML = fs.readFileSync("data/addresses-members-of-parliament.html", "utf8"); // TODO soon fetch live
+            const root = parse(addressesHTML);
+
+            let blocks = root.querySelectorAll("div.col-lg-4")
+                .filter(div => (div.childNodes[1] as HTMLElement)?.tagName === "H2");
+            if (activeConfig.maxLegislators > 0) {
+                console.warn(`Max legislators to process: ${activeConfig.maxLegislators}`);
+                blocks = blocks.slice(0, activeConfig.maxLegislators);
+            }
+            console.log("HTML blocks to process: " + blocks.length);
+            blocks.map(htmlBlockToLegislator).forEach((l: LegislatorData, index: number) => {
+                legislatorsByNameId.set(l.nameId, l);
+            });
+            console.info(`Number of legislators collected: ${legislatorsByNameId.size}`);
         }
-    });
-}
 
-// fetch contact data for each legislator in parallel
-async function processContactData(legislatorsByNameId: Map<string, Legislator>) {
-    let promises = Array<Promise<void>>();
-    let count = 0;
-    let failures = 0;
-    for (let [nameId, leg] of legislatorsByNameId) {
-        await fetchAndMergeDataFromContactLink(leg);
-        if (count % 5 == 0) console.log(`fetchAndMergeDataFromContactLink: processed ${count} failures ${failures}...`);
-        await delay(CONFIG.delay);
-    }
-    // legislatorsByNameId.forEach((leg, nameId) => {
-    // promises.push(await fetchAndMergeDataFromContactLink(leg);
-    // });
-    // let results = await Promise.allSettled(promises);
-    // console.log(`contact data fetch: ${results.length} attempts with ${results.filter(r => r.status === "rejected").length} failures`);
+        // Process XML file containing constituency data
+        function addConstituencies(constituenciesByNameId: Map<string, ConstituencyData>, legislatorsByNameId: Map<string, LegislatorData>) {
+            const xml = fs.readFileSync("data/parliament-members.xml", "utf8");
+            const parser = new XMLParser();
+            let xmlData = parser.parse(xml);
+            let mps = xmlData.ArrayOfMemberOfParliament.MemberOfParliament;
+            if (activeConfig.maxLegislators > 0) mps = mps.slice(0, activeConfig.maxLegislators);
+            mps.forEach((mp: XMLMemberOfParliament) => {
+                mergeInConstituencyData(constituenciesByNameId, legislatorsByNameId, mp);
+            });
+        }
 
-    async function fetchAndMergeDataFromContactLink(leg: Legislator): Promise<void> {
-        let contactURL = leg.urls["contact"];
-        console.log(`fetchAndMergeDataFromContactLink: processing ${contactURL}`);
-        if (!contactURL) return Promise.resolve();
-
-        return fetch(contactURL) // , { insecureHTTPParser: false }) not needed TODO remove
-            .then((res: any) => {
-                if (res.ok) {
-                    return res.text();
+        // Process the search HTML to get links to contact data (for email, website, etc)
+        function addContactLinks(legislatorsByNameId: Map<string, LegislatorData>) {
+            const searchHTML = fs.readFileSync("data/Current-Members-of-Parliament-Search.html", "utf8"); // TODO soon fetch live
+            const searchRoot = parse(searchHTML);
+            let tiles = searchRoot.querySelectorAll("div.ce-mip-mp-tile-container");
+            if (activeConfig.maxLegislators > 0) {
+                tiles = tiles.slice(0, activeConfig.maxLegislators);
+            }
+            console.log(`Number of tiles to process: ${tiles.length}`);
+            tiles.forEach(tile => {
+                let href = tile.querySelector("a")?.getAttribute("href") as string;
+                let name = tile.querySelectorAll("div.ce-mip-mp-name")[0]?.text;
+                if (href && name) {
+                    mergeInContactLink(standardizeName(name), href, legislatorsByNameId);
                 } else {
-                    failures++;
-                    return Promise.reject(`fetchAndMergeDataFromContactLink: ${contactURL} -> HTTP error: ${res.status}`);
+                    console.warn(`getAllLegislators: MISSING name ${name} or contact link ${href}`);
                 }
-            })
-            .then((body: any) => {
-                count++;
-                const root = parse(body);
-                const blocks = root.querySelectorAll("div").filter(a => {
-                    // div contains h4 element with text "Email"
-                    return a.querySelector("h4")?.text.includes("Email")
-                }).forEach(block => {
-                    // then extract the contents of the two links in the div
-                    block.querySelectorAll("a").forEach(a => {
-                        const href = a.getAttribute("href");
-                        if (!href) return;
-                        if (href.includes("mailto")) {
-                            leg.email = href.substring(7); // drop the mailto:
-                        } else if (href.includes("http")) {
-                            leg.urls["website"] = href;
-                        }
-                    });
-                });
-            })
-            .catch((err: any) => console.warn(
-                `fetchAndMergeDataFromContactLink: ${contactURL} -> ${err}\n${err.stack}`));
-    }
-}
-
-async function addConstituencyIds(constituenciesByNameId: Map<string, Constituency>, legislatorsByNameId: Map<string, Legislator>) {
-    const conListHTML = fs.readFileSync("data/Current Constituencies.html", "utf8"); // TODO soon fetch live
-    const searchRoot = parse(conListHTML);
-    const tiles = searchRoot.querySelectorAll("a.mip-constituency-tile");
-    console.log(`Number of tiles to process: ${tiles.length}`);
-    tiles.forEach(tile => {
-        let href = tile.getAttribute("href") as string;
-        let lastSlash = href.lastIndexOf("/");
-        let [nameId, id] = href.substring(lastSlash + 1).split("(");
-        id = id.substring(0, id.length - 1); // drop trailing ")"
-        nameId = makeConstituencyNameId(nameId); // cleanup weird dashes etc
-        let name = tile.querySelector("div.mip-constituency-name")?.text.trim() as string;
-        let legName = tile.querySelector("span.mip-mp-name")?.text as string;
-
-        let cons = constituenciesByNameId.get(nameId)
-        if (cons !== undefined) {
-            cons.id = id;
-        } else {
-            if (CONFIG.maxLegislators <= 0)
-                console.warn(`NOT FOUND constituency ${name} with id: ${nameId}`);
+            });
         }
-    });
+
+        // fetch contact data for each legislator in parallel
+        async function processContactData(legislatorsByNameId: Map<string, LegislatorData>) {
+            let promises = Array<Promise<void>>();
+            let count = 0;
+            let failures = 0;
+            for (let [nameId, leg] of legislatorsByNameId) {
+                await fetchAndMergeDataFromContactLink(leg);
+                if (count % 5 == 0) console.log(`fetchAndMergeDataFromContactLink: processed ${count} failures ${failures}...`);
+                await delay(activeConfig.delay);
+            }
+            // legislatorsByNameId.forEach((leg, nameId) => {
+            // promises.push(await fetchAndMergeDataFromContactLink(leg);
+            // });
+            // let results = await Promise.allSettled(promises);
+            // console.log(`contact data fetch: ${results.length} attempts with ${results.filter(r => r.status === "rejected").length} failures`);
+
+            async function fetchAndMergeDataFromContactLink(leg: LegislatorData): Promise<void> {
+                let contactURL = leg.urls["contact"];
+                console.log(`fetchAndMergeDataFromContactLink: processing ${contactURL}`);
+                if (!contactURL) return Promise.resolve();
+
+                return fetch(contactURL) // , { insecureHTTPParser: false }) not needed TODO remove
+                    .then((res: any) => {
+                        if (res.ok) {
+                            return res.text();
+                        } else {
+                            failures++;
+                            return Promise.reject(`fetchAndMergeDataFromContactLink: ${contactURL} -> HTTP error: ${res.status}`);
+                        }
+                    })
+                    .then((body: any) => {
+                        count++;
+                        const root = parse(body);
+                        const blocks = root.querySelectorAll("div").filter(a => {
+                            // div contains h4 element with text "Email"
+                            return a.querySelector("h4")?.text.includes("Email")
+                        }).forEach(block => {
+                            // then extract the contents of the two links in the div
+                            block.querySelectorAll("a").forEach(a => {
+                                const href = a.getAttribute("href");
+                                if (!href) return;
+                                if (href.includes("mailto")) {
+                                    leg.email = href.substring(7); // drop the mailto:
+                                } else if (href.includes("http")) {
+                                    leg.urls["website"] = href;
+                                }
+                            });
+                        });
+                    })
+                    .catch((err: any) => console.warn(
+                        `fetchAndMergeDataFromContactLink: ${contactURL} -> ${err}\n${err.stack}`));
+            }
+        }
+
+        async function addConstituencyIds(constituenciesByNameId: Map<string, ConstituencyData>, legislatorsByNameId: Map<string, LegislatorData>) {
+            const conListHTML = fs.readFileSync("data/Current Constituencies.html", "utf8"); // TODO soon fetch live
+            const searchRoot = parse(conListHTML);
+            const tiles = searchRoot.querySelectorAll("a.mip-constituency-tile");
+            console.log(`Number of tiles to process: ${tiles.length}`);
+            tiles.forEach(tile => {
+                let href = tile.getAttribute("href") as string;
+                let lastSlash = href.lastIndexOf("/");
+                let [nameId, id] = href.substring(lastSlash + 1).split("(");
+                id = id.substring(0, id.length - 1); // drop trailing ")"
+                nameId = makeConstituencyNameId(nameId); // cleanup weird dashes etc
+                let name = tile.querySelector("div.mip-constituency-name")?.text.trim() as string;
+                let legName = tile.querySelector("span.mip-mp-name")?.text as string;
+
+                let cons = constituenciesByNameId.get(nameId)
+                if (cons !== undefined) {
+                    cons.id = id;
+                } else {
+                    if (activeConfig.maxLegislators <= 0)
+                        console.warn(`NOT FOUND constituency ${name} with id: ${nameId}`);
+                }
+            });
+        }
+    }
 }
 
 
@@ -227,12 +239,12 @@ async function addConstituencyIds(constituenciesByNameId: Map<string, Constituen
  * @param b 
  * @returns 
  */
-function htmlBlockToLegislator(b: HTMLElement): Legislator {
+function htmlBlockToLegislator(b: HTMLElement): LegislatorData {
     let name = standardizeName(b.childNodes[1].text);
     console.log(`htmlBlockToLegislator: processing name = ${name}`);
     let [last, first] = name.split(", ");
 
-    let leg: Legislator = defaultLegislator(first, last);
+    let leg: LegislatorData = defaultLegislator(first, last);
     try {
         let cursor: HTMLDocumentCursor = { nodes: b.childNodes, index: 0 };
         while (cursor.index < cursor.nodes.length) {
@@ -287,7 +299,7 @@ type XMLMemberOfParliament = {
     PersonShortHonorific: string // usually empty
 }
 
-function mergeInConstituencyData(constituenciesByNameId: Map<string, Constituency>, legislatorsByNameId: Map<string, Legislator>, xmlData: XMLMemberOfParliament) {
+function mergeInConstituencyData(constituenciesByNameId: Map<string, ConstituencyData>, legislatorsByNameId: Map<string, LegislatorData>, xmlData: XMLMemberOfParliament) {
     let consNameId = makeConstituencyNameId(xmlData.ConstituencyName
         .replaceAll("'", "").replaceAll(".", ""));
     let constituency = constituenciesByNameId.get(consNameId);
@@ -308,13 +320,13 @@ function mergeInConstituencyData(constituenciesByNameId: Map<string, Constituenc
     }
 }
 
-function mergeConstituencyIds(legislatorsByNameId: Map<string, Legislator>, block: HTMLElement) {
+function mergeConstituencyIds(legislatorsByNameId: Map<string, LegislatorData>, block: HTMLElement) {
     let nameId = makeNameId(standardizeName(""), "");
     let leg = legislatorsByNameId.get(nameId);
 }
 
 
-function mergeInContactLink(fullName: string, href: string, legislatorsByNameId: Map<string, Legislator>): void {
+function mergeInContactLink(fullName: string, href: string, legislatorsByNameId: Map<string, LegislatorData>): void {
     let [nothing, members, en, rest] = href.split("/");
     let [_, id] = rest.split("(") as string[];
     id = id.substring(0, id.length - 1); // drop trailing ")"
@@ -322,7 +334,7 @@ function mergeInContactLink(fullName: string, href: string, legislatorsByNameId:
     const first = names[0];
     const last = names[names.length - 1]; // in case there is a middle name to ignore
 
-    let leg: Legislator = legislatorsByNameId.get(makeNameId(first, last)) as Legislator;
+    let leg: LegislatorData = legislatorsByNameId.get(makeNameId(first, last)) as LegislatorData;
     if (leg !== undefined) {
         leg.id = id;
         leg.urls["contact"] = `https://www.ourcommons.ca${href}`;

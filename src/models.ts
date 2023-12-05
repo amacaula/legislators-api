@@ -1,6 +1,6 @@
 import {
-    AddressType, GovernmentLevel, GovernmentData, GovernmentMetadata, isGovernmentData, Constituency,
-    Legislature, Legislator, LegislatorURLs, LegislatorLookupProvider
+    TypedAddress, GovernmentLevel, GovernmentData, GovernmentMetadata, isGovernmentData, ConstituencyData,
+    Legislature, LegislatorData, LegislatorURLs, LegislatorLookupProvider
 } from "./types";
 
 // TODO next replace id, nameId with surrogateKey and naturalKey?
@@ -13,10 +13,10 @@ export class Government {
     readonly region: string | null;
     readonly legislature: Legislature;
     readonly expectedConstituencies: number;
-    constituencies: Array<Constituency>;
-    constituenciesByNameId: Map<string, Constituency>;
-    legislators: Array<Legislator>;
-    legislatorsByNameId: Map<string, Legislator>;
+    constituencies: Array<ConstituencyData>;
+    constituenciesByNameId: Map<string, ConstituencyData>;
+    legislators: Array<LegislatorData>;
+    legislatorsByNameId: Map<string, LegislatorData>;
     lookupProvider!: LegislatorLookupProvider;
 
     // Constructor works with either of two input data types
@@ -29,8 +29,8 @@ export class Government {
         this.legislature = data.legislature;
         this.expectedConstituencies = data.expectedConstituencies;
         this.lookupProvider = data.lookupProvider;
-        this.legislatorsByNameId = new Map<string, Legislator>();
-        this.constituenciesByNameId = new Map<string, Constituency>();
+        this.legislatorsByNameId = new Map<string, LegislatorData>();
+        this.constituenciesByNameId = new Map<string, ConstituencyData>();
 
         if (isGovernmentData(data)) {
             this.legislators = data.legislators;
@@ -38,8 +38,8 @@ export class Government {
             this.legislators.forEach(l => this.legislatorsByNameId.set(l.nameId, l));
             this.constituencies.forEach(l => this.constituenciesByNameId.set(l.nameId, l));
         } else {
-            this.legislators = new Array<Legislator>();
-            this.constituencies = new Array<Constituency>();
+            this.legislators = new Array<LegislatorData>();
+            this.constituencies = new Array<ConstituencyData>();
         }
     }
 
@@ -66,14 +66,72 @@ export class Government {
     async getConsitituencyByPostal(postal: string) {
         let [legName, conName] = await this.lookupProvider
             .lookupLegislatorAndConsitituencyNamesByPostal(postal);
-        return this.constituencies.find(c => c.name === conName) as Constituency;
+        return this.constituencies.find(c => c.name === conName) as ConstituencyData;
     }
     getLegislatorByFullName(first: string, last: string) {
         let nameId = makeNameId(first, last);
-        return this.legislators.find(l => l.nameId === nameId) as Legislator;
+        return this.legislators.find(l => l.nameId === nameId) as LegislatorData;
     }
     searchLegistlatorsByPartialNames(partial: string) {
-        return new Array<Legislator>(); // TODO later implement
+        return new Array<LegislatorData>(); // TODO later implement
+    }
+}
+
+export class Legislator {
+    readonly government: Government;
+    readonly id!: string;
+    readonly nameId!: string;
+    readonly firstName!: string;
+    readonly lastName!: string;
+    readonly honorific: string | null;
+    readonly isCurrent!: boolean;
+    readonly party!: string;
+    readonly fromDate!: string;
+    readonly email: string;
+    readonly addresses: Array<TypedAddress>;
+    readonly urls: LegislatorURLs;
+    readonly constituency: Constituency;
+
+    constructor(data: LegislatorData, government: Government) {
+        this.government = government;
+        this.id = data.id;
+        this.nameId = data.nameId;
+        this.firstName = data.firstName;
+        this.lastName = data.lastName;
+        this.honorific = data.honorific;
+        this.isCurrent = data.isCurrent;
+        this.party = data.party;
+        this.fromDate = data.fromDate;
+        this.email = data.email;
+        this.addresses = data.addresses;
+        this.urls = data.urls;
+        this.constituency = new Constituency(government.constituenciesByNameId.get(data.constituencyNameId) as ConstituencyData, government);
+    }
+}
+
+export class Constituency {
+    readonly government: Government;
+    readonly id!: string;
+    readonly nameId!: string;
+    readonly name!: string;
+    readonly country!: string;
+    readonly region!: string;
+    readonly municipality: string | null;
+    readonly legislator: Legislator | null;
+
+    constructor(data: ConstituencyData, government: Government, legislator: Legislator | null = null) {
+        this.government = government;
+        this.id = data.id;
+        this.nameId = data.nameId;
+        this.name = data.name;
+        this.country = data.country;
+        this.region = data.region;
+        this.municipality = data.municipality;
+        if (legislator) {
+            this.legislator = legislator;
+        } else {
+            this.legislator = new Legislator(government.legislatorsByNameId.get(data.legislatorNameId) as LegislatorData, government);
+        }
     }
 }
 
@@ -81,17 +139,17 @@ export class Government {
 
 // TODO next allow navigation from Constituency to Legislator and vice versa by making them classes
 
-export function defaultLegislator(first: string, last: string): Legislator {
+export function defaultLegislator(first: string, last: string): LegislatorData {
     return {
         id: "", nameId: makeNameId(first, last), firstName: first, lastName: last, honorific: "",
         isCurrent: true, fromDate: "",
         party: "", email: "",
         addresses: [], urls: {} as LegislatorURLs,
         constituencyNameId: "UNKNOWN",
-    } as Legislator;
+    } as LegislatorData;
 }
 
-export function defaultConstituency(name: string): Constituency {
+export function defaultConstituency(name: string): ConstituencyData {
     return {
         id: "",
         nameId: makeConstituencyNameId(name),

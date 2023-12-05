@@ -1,0 +1,41 @@
+# Comments in GraphQL strings (such as this one) start with the hash (#) symbol.
+
+  # TODO next double check data types below
+  type Legislator {
+    id: String!
+    nameId: String!
+    firstName: String!
+    lastName: String!
+    honorific: String
+    party: String!
+    fromDate: String!
+    toDate: String
+    isCurrent: Boolean!
+    email: String
+    urls: [String] # TODO later is there a URL type?
+    addresses: [TypedAddress!]!
+    constituencyNameId: String!  }
+
+  type Constituency {
+    id: String!
+    name: String!
+    country: String!
+    region: String!
+    municipality: String
+    legislatorNameId: String
+  }
+
+  type TypedAddress {
+    type: String!
+    physical: String # TODO later should this be broken down into lines or postal code?
+    phone: String!
+    fax: String
+  }
+
+  # The "Query" type is special: it lists all of the available queries that
+  # clients can execute, along with the return type for each. In this
+  # case, the "books" query returns an array of zero or more Books (defined above).
+  type Query {
+    legislators(filter: String, start: Int, count: Int): [Legislator]
+    legislator(id: String!): Legislator
+  }

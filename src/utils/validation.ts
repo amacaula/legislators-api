@@ -1,6 +1,6 @@
 import { getGovernmentbyId } from '../legislator_api/government_finder';
 import { Government } from '../models';
-import { Legislator, AddressType, Constituency, GovernmentData } from '../types';
+import { LegislatorData, AddressType, ConstituencyData, GovernmentData } from '../types';
 
 export type KeyedIssue = {
     key: string
@@ -71,8 +71,8 @@ export function validateGovernment(gov: Government | GovernmentData): KeyedIssue
 
 async function checkFederalGovernment() {
     let gov = await getGovernmentbyId("ca.federal");
-    let legislators: Legislator[]
-    let cons: Constituency
+    let legislators: LegislatorData[]
+    let cons: ConstituencyData
 
     try {
         legislators = gov.legislators;

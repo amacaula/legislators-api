@@ -1,7 +1,12 @@
 import { ApolloServer, ApolloServerPlugin, BaseContext, GraphQLRequestContext, GraphQLRequestListener } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
-import { Legislator } from './types';
-const legislators: Array<Legislator> = require("../data/federal-legislators.json"); // TODO next fix for recent changes and test
+
+import { Government } from './models';
+import { LegislatorData, ConstituencyData } from './types';
+
+const government: Government = require("../../data/ca-federal-government.json");
+const legislators: Array<LegislatorData> = government.legislators;
+const constituencies: Array<ConstituencyData> = government.constituencies;
 
 // A schema is a collection of type definitions (hence "typeDefs")
 // that together define the "shape" of queries that are executed against
@@ -23,8 +28,7 @@ const typeDefs = `#graphql
     email: String
     urls: [String] # TODO later is there a URL type?
     addresses: [TypedAddress!]!
-    constituency: Constituency!
-  }
+    constituencyNameId: String!  }
 
   type Constituency {
     id: String!
@@ -32,7 +36,7 @@ const typeDefs = `#graphql
     country: String!
     region: String!
     municipality: String
-    currentLegislatorId: String
+    legislatorNameId: String
   }
 
   type TypedAddress {
@@ -53,14 +57,14 @@ const typeDefs = `#graphql
 
 const resolvers = {
   Query: {
-    legislators: function (parent: any, args: any, contextValue: any, info: any): Array<Legislator> {
+    legislators: function (parent: any, args: any, contextValue: any, info: any): Array<LegislatorData> {
       // filter if requested
-      let results = (args.filter) ? legislators.filter((l: Legislator) => l.nameId.includes(args.filter.toLowerCase())) : legislators;
+      let results = (args.filter) ? legislators.filter((l: LegislatorData) => l.nameId.includes(args.filter.toLowerCase())) : legislators;
       // page if requested
       args.start = args.start || 0;
       return args.count ? results.slice(args.start, args.start + args.count) : results;
     },
-    legislator: (parent: any, args: any, contextValue: any, info: any) => legislators.find((l: Legislator) => l.id === args.id)
+    legislator: (parent: any, args: any, contextValue: any, info: any) => legislators.find((l: LegislatorData) => l.id === args.id)
   },
 };
 

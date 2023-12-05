@@ -2,6 +2,11 @@ import { Government } from "./models";
 
 // --- Government and Legislature ---
 
+export type GovernmentBuilderFactory = {
+    // static availableGovernments: () => Array<GovernmentMetadata>
+    build: (metadata: GovernmentMetadata, config?: any) => Promise<Government>
+}
+
 export enum GovernmentLevel {
     Federal = "federal",
     Regional = "regional",
@@ -24,8 +29,8 @@ export type GovernmentMetadata = {
 }
 
 export type GovernmentData = GovernmentMetadata & {
-    constituencies: Array<Constituency>
-    legislators: Array<Legislator>
+    constituencies: Array<ConstituencyData>
+    legislators: Array<LegislatorData>
 }
 
 export function isGovernmentData(data: GovernmentData | GovernmentMetadata): data is GovernmentData {
@@ -45,7 +50,7 @@ export type LegislatureURLs = {
 
 // --- Legislators ---
 
-export type Legislator = {
+export type LegislatorData = {
     id: string
     honorific: string | null
     firstName: string
@@ -60,7 +65,7 @@ export type Legislator = {
     constituencyNameId: string
 }
 
-export type Constituency = {
+export type ConstituencyData = {
     id: string
     nameId: string
     name: string
