@@ -20,7 +20,7 @@ export class Government {
     lookupProvider!: LegislatorLookupProvider;
 
     // Constructor works with either of two input data types
-    constructor(data: GovernmentMetadata | GovernmentData) {
+    constructor(data: GovernmentMetadata | GovernmentData, lookupProvider: LegislatorLookupProvider) {
         this.id = data.id;
         this.level = data.level;
         this.name = data.name;
@@ -28,9 +28,9 @@ export class Government {
         this.region = data.region;
         this.legislature = data.legislature;
         this.expectedConstituencies = data.expectedConstituencies;
-        this.lookupProvider = data.lookupProvider;
         this.legislatorsByNameId = new Map<string, LegislatorData>();
         this.constituenciesByNameId = new Map<string, ConstituencyData>();
+        this.lookupProvider = lookupProvider;
 
         if (isGovernmentData(data)) {
             this.legislators = data.legislators;
@@ -59,8 +59,8 @@ export class Government {
     }
 
     asGovernmentData(): GovernmentData {
-        return (({ id, level, name, country, region, legislature, expectedConstituencies, constituencies, legislators, lookupProvider }) =>
-            ({ id, level, name, country, region, legislature, expectedConstituencies, constituencies, legislators, lookupProvider }))(this);
+        return (({ id, level, name, country, region, legislature, expectedConstituencies, constituencies, legislators }) =>
+            ({ id, level, name, country, region, legislature, expectedConstituencies, constituencies, legislators }))(this);
     }
 
     async getConsitituencyByPostal(postal: string) {

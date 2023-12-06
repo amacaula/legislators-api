@@ -53,7 +53,6 @@ const governmentMetadata: GovernmentMetadata = {
         email: "info@parl.gc.ca"
     } as Legislature,
     expectedConstituencies: 338,
-    lookupProvider: MPlookupProvider
 }
 
 const STOP_TAGS = ["H3", "DIV", "P"];
@@ -80,7 +79,7 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
     async build(metadata: GovernmentMetadata = CanadaGovernmentProvider.availableGovernments()[0],
         config: any = {}): Promise<Government> {
         let activeConfig = { ...CanadaGovernmentProvider.defaultConfig, ...config }
-        let government = new Government(metadata);
+        let government = new Government(metadata, MPlookupProvider);
         const fetch = fetchBuilder.withCache(new FileSystemCache({
             cacheDirectory: 'cache', // Specify where to keep the cache. 
             ttl: 1000 * 60 * 60 * activeConfig.cacheTTLhours, // Time to live in ms (7 days)
@@ -318,11 +317,6 @@ function mergeInConstituencyData(constituenciesByNameId: Map<string, Constituenc
     } else {
         console.warn(`mergeInConstituencyData: UNKNOWN legislator id = ${nameId} for ${consNameId}`);
     }
-}
-
-function mergeConstituencyIds(legislatorsByNameId: Map<string, LegislatorData>, block: HTMLElement) {
-    let nameId = makeNameId(standardizeName(""), "");
-    let leg = legislatorsByNameId.get(nameId);
 }
 
 

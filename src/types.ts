@@ -25,7 +25,6 @@ export type GovernmentMetadata = {
     region: string | null
     legislature: Legislature
     expectedConstituencies: number
-    lookupProvider: LegislatorLookupProvider
 }
 
 export type GovernmentData = GovernmentMetadata & {

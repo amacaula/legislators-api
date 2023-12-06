@@ -5,6 +5,7 @@
     "@types/jasmine": "5.1.4",
     "@urql/core": "^4.1.4",
     "cors": "^2.8.5",
+    "deep-object-diff": "^1.1.9",
     "express": "^4.18.2",
     "fast-xml-parser": "^4.3.2",
     "graphql": "^16.8.1",
