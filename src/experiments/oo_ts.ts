@@ -1,3 +1,17 @@
+/* This is an experiment to clarify how best to use types, interfaces and classes
+ * to support slack typing on "draft" types that can be used to gradually build up structured
+ * data from a variety of sources and then convert to classes with supporting interfaces that
+ * are exposed in APIs with clean typing, birdirectional references supporting a number of
+ * serialization graphs (with JSON.stringify) and a minimum of duplicate code.
+ * 
+ * The bidirectionally navigable Person and House classes are the main focus of this experiment.
+ * Each as a
+ * - Draft<Name> type that is used to build up the data structure gradually
+ * - <Name> interface that is used to expose the data structure in APIs with bidirectional references
+ * - <Name>Impl class that is used to implement the interface, provide the data structure and 
+ *   supporting helper functions including for validation and serialization
+ */
+
 // ----------------------- General types and functions ------------------
 type ID = string;
 function validateFormatPhone(phone: string): string {
@@ -11,6 +25,8 @@ function validateFormatPhone(phone: string): string {
     }
     return phone
 }
+
+// ----------------------- Person types, interfaces and class ------------------
 
 // For building up a person data structure gradually
 type DraftPerson = {
@@ -69,6 +85,7 @@ class PersonImpl implements Person {
     }
 }
 
+// ----------------------- House types, interfaces and class ------------------
 
 type DraftHouse = {
     surrogateKey?: ID; // not typically available in first data retrieved
@@ -107,9 +124,10 @@ class HouseImpl implements House {
         }
         return value;
     }
+    // TODO next add Date replacer for birthday
 }
 
-// TODO next add Date replacer for birthday
+// ------------------ Main test code ------------------
 
 // creating start* objects requires only the barest minimum of data
 let person = startPerson("Bob Marley", "1978-03-05", startHouse("5120 Windsor St"));
