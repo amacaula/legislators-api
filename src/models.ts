@@ -189,3 +189,12 @@ function removeAccents(str: string): string {
 function removeSpecialChars(str: string): string {
     return str.replace(/\.|\'/g, '').replace(/\s|—|—'/g, '-') // many dash types
 }
+
+// TODO next have full references between legislators and constituencies but map away in JSON.stringify
+export function referenceReplacer(key: string, value: any) {
+    if ((key === "legislator" || key === "constituency") && typeof value === "object") {
+        return value.nameId;
+    }
+    return value;
+}
+// TODO soon not sure we need a reviver function

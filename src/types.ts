@@ -61,7 +61,7 @@ export type LegislatorData = {
     email: string
     addresses: Array<TypedAddress>
     urls: LegislatorURLs
-    constituencyNameId: string
+    constituencyNameId: string // TODO next rename and retype
 }
 
 export type ConstituencyData = {
@@ -71,7 +71,7 @@ export type ConstituencyData = {
     country: string
     region: string
     municipality: string | null
-    legislatorNameId: string
+    legislatorNameId: string // TODO next rename and retype
 }
 
 export type TypedAddress = {

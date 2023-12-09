@@ -4,7 +4,7 @@ import { MPlookupProvider } from "../federal/lookups";
 
 // ------------------- Build up data structure of all known governments -------------------------
 
-let ca_federal = new Government(require("../../../data/ca-federal-government.json") as GovernmentData, MPlookupProvider);
+let ca_federal = new Government(require("../../../data/ca.federal.houseOfCommons.json") as GovernmentData, MPlookupProvider);
 ca_federal.lookupProvider = MPlookupProvider;
 
 // TODO later update so that files are read in only as needed and not all up front

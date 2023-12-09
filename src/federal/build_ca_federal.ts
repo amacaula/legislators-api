@@ -103,6 +103,7 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
         async function addLegislators(legislatorsByNameId: Map<string, LegislatorData>) {
             const addressesHTML = fs.readFileSync("data/addresses-members-of-parliament.html", "utf8"); // TODO soon fetch live
             const root = parse(addressesHTML);
+            let count = 0;
 
             let blocks = root.querySelectorAll("div.col-lg-4")
                 .filter(div => (div.childNodes[1] as HTMLElement)?.tagName === "H2");
@@ -115,6 +116,57 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
                 legislatorsByNameId.set(l.nameId, l);
             });
             console.info(`Number of legislators collected: ${legislatorsByNameId.size}`);
+
+            function htmlBlockToLegislator(b: HTMLElement): LegislatorData {
+                let name = standardizeName(b.childNodes[1].text);
+                if (count % 10 == 0) console.log(`htmlBlockToLegislator: processed: ${count} at name = ${name}`);
+                let [last, first] = name.split(", ");
+
+                let leg: LegislatorData = defaultLegislator(first, last);
+                try {
+                    let cursor: HTMLDocumentCursor = { nodes: b.childNodes, index: 0 };
+                    while (cursor.index < cursor.nodes.length) {
+                        let addressType = extractAddressType(cursor);
+                        if (addressType === null) break; // no more addresses
+
+                        if (addressType === AddressType.Local) {
+                            // Recursively process any P elements
+                            let isFirst = true;
+                            cursor.nodes.filter(n => (n as HTMLElement).tagName === "P").forEach(p => {
+                                let inner: HTMLDocumentCursor = { nodes: p.childNodes, index: 0 };
+                                let a: TypedAddress = { type: AddressType.Local, physical: null, phone: "missing", fax: null };
+
+                                let addr = extractMultilineAddress(inner);
+                                if (addr.length > 0) {
+                                    a.physical = addr;
+                                }
+                                let otherProperties = extractNamedAttributes(inner);
+                                a = { ...a, ...otherProperties };
+                                leg.addresses.push(a);
+                                isFirst = false;
+                            });
+                        } else {
+                            let a: TypedAddress = { type: AddressType.Central, physical: null, phone: "missing", fax: null };
+                            a.physical = HOUSE_OF_COMMONS_PHYSICAL_ADDRESS;
+                            let otherProperties = extractNamedAttributes(cursor);
+                            a = { ...a, ...otherProperties };
+                            leg.addresses.push(a);
+                        }
+                    }
+                } catch (e) {
+                    console.error(`htmlBlockToLegislator: ${b.toString()}\n -> ${e}`);
+                }
+                // identify main local address
+                const locals = leg.addresses.filter(a => a.type === AddressType.Local);
+                if (locals.length == 1) {
+                    locals[0].type = AddressType.MainLocal;
+                } else if (locals.length > 1) {
+                    const main = locals.find(a => a.physical?.includes("(Main"));
+                    if (main) main.type = AddressType.MainLocal;
+                }
+                count++;
+                return leg;
+            }
         }
 
         // Process XML file containing constituency data
@@ -156,7 +208,7 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
             let failures = 0;
             for (let [nameId, leg] of legislatorsByNameId) {
                 await fetchAndMergeDataFromContactLink(leg);
-                if (count % 5 == 0) console.log(`fetchAndMergeDataFromContactLink: processed ${count} failures ${failures}...`);
+                if (count % 10 == 0) console.log(`fetchAndMergeDataFromContactLink: processed ${count} failures ${failures}...`);
                 await delay(activeConfig.delay);
             }
             // legislatorsByNameId.forEach((leg, nameId) => {
@@ -167,7 +219,6 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
 
             async function fetchAndMergeDataFromContactLink(leg: LegislatorData): Promise<void> {
                 let contactURL = leg.urls["contact"];
-                console.log(`fetchAndMergeDataFromContactLink: processing ${contactURL}`);
                 if (!contactURL) return Promise.resolve();
 
                 return fetch(contactURL) // , { insecureHTTPParser: false }) not needed TODO remove
@@ -231,62 +282,6 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
 
 
 // ----------------------- Building or merging in data for single Legislator -----------------------
-
-/**
- * Process extracted HTML file from 
- * TODO rename to "merge" style name?
- * @param b 
- * @returns 
- */
-function htmlBlockToLegislator(b: HTMLElement): LegislatorData {
-    let name = standardizeName(b.childNodes[1].text);
-    console.log(`htmlBlockToLegislator: processing name = ${name}`);
-    let [last, first] = name.split(", ");
-
-    let leg: LegislatorData = defaultLegislator(first, last);
-    try {
-        let cursor: HTMLDocumentCursor = { nodes: b.childNodes, index: 0 };
-        while (cursor.index < cursor.nodes.length) {
-            let addressType = extractAddressType(cursor);
-            if (addressType === null) break; // no more addresses
-
-            if (addressType === AddressType.Local) {
-                // Recursively process any P elements
-                let isFirst = true;
-                cursor.nodes.filter(n => (n as HTMLElement).tagName === "P").forEach(p => {
-                    let inner: HTMLDocumentCursor = { nodes: p.childNodes, index: 0 };
-                    let a: TypedAddress = { type: AddressType.Local, physical: null, phone: "missing", fax: null };
-
-                    let addr = extractMultilineAddress(inner);
-                    if (addr.length > 0) {
-                        a.physical = addr;
-                    }
-                    let otherProperties = extractNamedAttributes(inner);
-                    a = { ...a, ...otherProperties };
-                    leg.addresses.push(a);
-                    isFirst = false;
-                });
-            } else {
-                let a: TypedAddress = { type: AddressType.Central, physical: null, phone: "missing", fax: null };
-                a.physical = HOUSE_OF_COMMONS_PHYSICAL_ADDRESS;
-                let otherProperties = extractNamedAttributes(cursor);
-                a = { ...a, ...otherProperties };
-                leg.addresses.push(a);
-            }
-        }
-    } catch (e) {
-        console.error(`htmlBlockToLegislator: ${b.toString()}\n -> ${e}`);
-    }
-    // identify main local address
-    const locals = leg.addresses.filter(a => a.type === AddressType.Local);
-    if (locals.length == 1) {
-        locals[0].type = AddressType.MainLocal;
-    } else if (locals.length > 1) {
-        const main = locals.find(a => a.physical?.includes("(Main"));
-        if (main) main.type = AddressType.MainLocal;
-    }
-    return leg;
-}
 
 type XMLMemberOfParliament = {
     CaucusShortName: string // example 'Conservative'

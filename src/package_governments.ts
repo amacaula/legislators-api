@@ -20,6 +20,7 @@ function countPropertyDiffs(diffs: any): number {
 // TODO later generalize once we have more than one government cached
 
 (async () => {
+    console.log("Extracting and packaging Canada Federal Government...");
     let gov = await (new CanadaGovernmentProvider()).build();
     const relativeFilename = `data/${gov.id}.json`;
     let haveNewData = true;
