@@ -14,7 +14,6 @@ const constituencies: Array<ConstituencyData> = government.constituencies;
 const typeDefs = `#graphql
   # Comments in GraphQL strings (such as this one) start with the hash (#) symbol.
 
-  # TODO next double check data types below
   type Legislator {
     id: String!
     nameId: String!

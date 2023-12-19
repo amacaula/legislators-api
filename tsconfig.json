@@ -22,6 +22,7 @@
     "forceConsistentCasingInFileNames": true, /* Ensure that casing is correct in imports. */
     /* Type Checking */
     "strict": true, /* Enable all strict type-checking options. */
+    "strictPropertyInitialization": false, /* Enable strict checking of property initialization in classes. */
     /* Completeness */
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
   },

@@ -23,12 +23,12 @@ function validateFormatPhone(phone: string): string {
     } else {
         return `${phone} INVALID`;
     }
-    return phone
+    return formattedPhoneNumber;
 }
 
 // ----------------------- Person types, interfaces and class ------------------
 
-// For building up a person data structure gradually
+// For building up a person data structure gradually - most fields are optional
 type DraftPerson = {
     surrogateKey?: ID; // not typically available in first data retrieved
     naturalKey: string;
@@ -36,28 +36,58 @@ type DraftPerson = {
     birthday?: string | Date; // assigned as string initially
     house?: DraftHouse;
 }
+// End up using natural keys at the beginning based on names as they are available (but often inconsistent)
+function makeNaturalKey(name: string): string {
+    return name.toLowerCase().replace(/ /g, "-");
+}
+// Convenience function to create starter person but no class needed
+// Any object with the necessary fields is welcome
 function startPerson(name: string, birthday?: string | Date, house?: DraftHouse): DraftPerson {
     let naturalKey = makeNaturalKey(name);
     return { naturalKey, name, birthday, house };
 }
-function makeNaturalKey(name: string): string {
-    return name.toLowerCase().replace(/ /g, "-");
-}
 
-// For the final person data structure exposed through APIs
+// Tighten up constraints for the final person data structure exposed through APIs
+// And use interface so can use implements below which reduces duplicate code declaring fields
+// Surprised there doesn't appear to be any limitations on overrides that can be applied
 interface Person extends DraftPerson {
     surrogateKey: ID; // now required
-    birthday: Date; // now must be date
+    birthday: Date; // now must be date and required
     house: House; // now a House and required
 }
+//
 class PersonImpl implements Person {
-    naturalKey: string;
-    constructor(public surrogateKey: ID, public name: string, public birthday: Date, public house: House) {
-        Object.assign(this, { surrogateKey, name, birthday, house });
-        this.naturalKey = makeNaturalKey(this.name);
-        this.house.owner = this;
+    private _name: string;
+    private _naturalKey: string;
+    private _house: House;
+    // Not sure why need to specify public - isnt it implied by implementing the Person interface
+    constructor(public surrogateKey: ID, name: string, public birthday: Date, house: House) {
+        Object.assign(this, { surrogateKey, birthday });
+        this.name = name;
+        this.house = house;
     }
-    static makePerson(draft: DraftPerson): PersonImpl {
+    // ----------------------- Getters and setters ------------------
+    public get house(): House {
+        return this._house;
+    }
+    public set house(value: House) {
+        this._house = value;
+        this._house.owner = this;
+    }
+    public get name(): string {
+        return this._name;
+    }
+    public set name(value: string) {
+        this._name = value;
+        this._naturalKey = makeNaturalKey(this.name);
+    }
+    public get naturalKey(): string {
+        return this._naturalKey;
+    }
+
+    // convert draft objects into full PersonImpl and HouseImpl objects
+    // Should this function declare that it throws an error?
+    static upgradePerson(draft: DraftPerson): PersonImpl {
         let { surrogateKey, name, birthday, house } = draft;
         let upgradedHouse, upgradedBirthday;
         if (house) {
@@ -73,9 +103,19 @@ class PersonImpl implements Person {
         return person;
     }
 
-    asDTO(): Person {
-        return (({ surrogateKey, naturalKey, name, birthday, house }) =>
-            ({ surrogateKey, naturalKey, name, birthday, house }))(this);
+    asDTO(follow: boolean = true): Person {
+        let dto: any = (({ surrogateKey, naturalKey, name, birthday }) =>
+            ({ surrogateKey, naturalKey, name, birthday }))(this);
+        if (follow) {
+            dto.house = (this.house as HouseImpl).asDTO(!follow);
+        } else {
+            dto.house = this.house?.naturalKey;
+        }
+        return dto;
+    }
+    toJSON() { // needed as getters and setters break JSON.stringify
+        let dto = this.asDTO();
+        return JSON.stringify(dto, null, 2);
     }
     static leafReplacer(key: string, value: any) {
         if (key === 'house') {
@@ -114,9 +154,18 @@ class HouseImpl implements House {
         let house = new HouseImpl(surrogateKey, address, validateFormatPhone(phone as string));
         return house;
     }
-    asDTO(): House {
-        return (({ surrogateKey, naturalKey, address, phone, owner }) =>
-            ({ surrogateKey, naturalKey, address, phone, owner }))(this);
+    asDTO(follow: boolean = true): House {
+        let dto: any = (({ surrogateKey, naturalKey, address, phone }) =>
+            ({ surrogateKey, naturalKey, address, phone }))(this);
+        if (follow) {
+            dto.owner = (this.owner as PersonImpl).asDTO(!follow);
+        } else {
+            dto.owner = this.owner?.naturalKey;
+        }
+        return dto;
+    }
+    toJSON() { // needed as getters and setters break JSON.stringify
+        return JSON.stringify(this.asDTO(), null, 2);
     }
     static leafReplacer(key: string, value: any) {
         if (key === 'owner') {
@@ -129,20 +178,19 @@ class HouseImpl implements House {
 
 // ------------------ Main test code ------------------
 
-// creating start* objects requires only the barest minimum of data
-let person = startPerson("Bob Marley", "1978-03-05", startHouse("5120 Windsor St"));
+// creating start* objects requires only the barest minimum of data, birthday not strictly required
+let house = startHouse("5120 Windsor St");
+let person = startPerson("Bob Marley", "1978-03-05", house);
 console.log("DraftPerson initial:\n", JSON.stringify(person, null, 2), "\n");
 
 // other fields can be added over time as they are extracted from other sources
 person.surrogateKey = "1234";
-(person.house as DraftHouse).phone = "604-327-9841";
-(person.house as DraftHouse).surrogateKey = "5678";
+house.phone = "604-327-9841";
+house.surrogateKey = "5678";
 console.log("DraftPerson ready:\n", JSON.stringify(person, null, 2), "\n");
 
-let person2 = PersonImpl.makePerson(person);
-console.log("PersonImpl:\n", JSON.stringify(person2, HouseImpl.leafReplacer, 2), "\n");
-console.log("HouseImpl:\n", JSON.stringify(person2.house, PersonImpl.leafReplacer, 2), "\n");
+let person2 = PersonImpl.upgradePerson(person);
+console.log("PersonImpl:\n", person2.toJSON(), "\n");
+console.log("HouseImpl:\n", (person2.house as HouseImpl).toJSON(), "\n");
 
-let person3 = person2.asDTO();
-console.log("Person DTO:\n", JSON.stringify(person3, HouseImpl.leafReplacer, 2), "\n");
 
