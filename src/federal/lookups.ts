@@ -1,4 +1,5 @@
 import { LegislatorLookupProvider } from "../types";
+import fetch from "node-fetch";
 
 export async function lookupLegislatorAndConsitituencyNamesByPostal(postal: string): Promise<[string, string]> {
     // Verify postal code format

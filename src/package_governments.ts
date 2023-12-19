@@ -7,14 +7,20 @@ import { diff } from 'deep-object-diff';
 
 function countPropertyDiffs(diffs: any): number {
     let count = 0;
-    for (const [key, value] of Object.entries(diffs)) {
-        if (typeof value === 'object') {
-            count += countPropertyDiffs(value);
-        } else {
-            count++;
+    let key;
+    let value;
+    try {
+        for ([key, value] of Object.entries(diffs)) {
+            if (typeof value === 'object' && value !== null) {
+                count += countPropertyDiffs(value);
+            } else {
+                count++;
+            }
         }
+    } catch (e) {
+        console.error(`Error counting property diffs for ${key}: ${e}`);
     }
-    return count
+    return count;
 }
 
 // TODO later generalize once we have more than one government cached
