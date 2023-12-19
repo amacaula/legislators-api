@@ -20,6 +20,14 @@ import { fetchBuilder, FileSystemCache } from 'node-fetch-cache';
 
 // ------------------------- types and globals -------------------------
 
+const DEFAULT_CONFIG: any = {
+    cacheTTLhours: 24 * 7, // 7 days
+    delay: 2 * 1000, // ms between fetches
+    maxLegislators: 0, // 0 means no limit
+    pruneUnusedConstituencies: false, // remove any constituencies without a legislator
+    logEvery: 5 // log progress every N legislators
+};
+
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -57,13 +65,6 @@ const governmentMetadata: GovernmentMetadata = {
 
 const STOP_TAGS = ["H3", "DIV", "P"];
 
-const DEFAULT_CONFIG: any = {
-    cacheTTLhours: 24 * 7, // 7 days
-    delay: 0, // ms between fetches
-    maxLegislators: 0, // 0 means no limit
-    pruneUnusedConstituencies: false // remove any constituencies without a legislator
-};
-
 // ----------------------- Main GovernmentBuilder -----------------------
 
 export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
@@ -78,11 +79,11 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
 
     async build(metadata: GovernmentMetadata = CanadaGovernmentProvider.availableGovernments()[0],
         config: any = {}): Promise<Government> {
-        let activeConfig = { ...CanadaGovernmentProvider.defaultConfig, ...config }
+        let cfg = { ...CanadaGovernmentProvider.defaultConfig, ...config }
         let government = new Government(metadata, MPlookupProvider);
         const fetch = fetchBuilder.withCache(new FileSystemCache({
             cacheDirectory: 'cache', // Specify where to keep the cache. 
-            ttl: 1000 * 60 * 60 * activeConfig.cacheTTLhours, // Time to live in ms (7 days)
+            ttl: 1000 * 60 * 60 * cfg.cacheTTLhours, // Time to live in ms (7 days)
         }));
 
         let legByNameId = government.legislatorsByNameId;
@@ -94,7 +95,7 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
         await addConstituencies(conByNameId, legByNameId);
         await addConstituencyIds(conByNameId, legByNameId);
 
-        government.finish(activeConfig.pruneUnusedConstituencies);
+        government.finish(cfg.pruneUnusedConstituencies);
         return government;
 
         // ------- Builder steps in closure -------
@@ -107,9 +108,9 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
 
             let blocks = root.querySelectorAll("div.col-lg-4")
                 .filter(div => (div.childNodes[1] as HTMLElement)?.tagName === "H2");
-            if (activeConfig.maxLegislators > 0) {
-                console.warn(`Max legislators to process: ${activeConfig.maxLegislators}`);
-                blocks = blocks.slice(0, activeConfig.maxLegislators);
+            if (cfg.maxLegislators > 0) {
+                console.warn(`Max legislators to process: ${cfg.maxLegislators}`);
+                blocks = blocks.slice(0, cfg.maxLegislators);
             }
             console.log("HTML blocks to process: " + blocks.length);
             blocks.map(htmlBlockToLegislator).forEach((l: LegislatorData, index: number) => {
@@ -119,7 +120,7 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
 
             function htmlBlockToLegislator(b: HTMLElement): LegislatorData {
                 let name = standardizeName(b.childNodes[1].text);
-                if (count % 10 == 0) console.log(`htmlBlockToLegislator: processed: ${count} at name = ${name}`);
+                if (count % cfg.logEvery == 0) console.log(`htmlBlockToLegislator: processed: ${count} at name = ${name}`);
                 let [last, first] = name.split(", ");
 
                 let leg: LegislatorData = defaultLegislator(first, last);
@@ -175,7 +176,7 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
             const parser = new XMLParser();
             let xmlData = parser.parse(xml);
             let mps = xmlData.ArrayOfMemberOfParliament.MemberOfParliament;
-            if (activeConfig.maxLegislators > 0) mps = mps.slice(0, activeConfig.maxLegislators);
+            if (cfg.maxLegislators > 0) mps = mps.slice(0, cfg.maxLegislators);
             mps.forEach((mp: XMLMemberOfParliament) => {
                 mergeInConstituencyData(constituenciesByNameId, legislatorsByNameId, mp);
             });
@@ -186,8 +187,8 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
             const searchHTML = fs.readFileSync("data/Current-Members-of-Parliament-Search.html", "utf8"); // TODO soon fetch live
             const searchRoot = parse(searchHTML);
             let tiles = searchRoot.querySelectorAll("div.ce-mip-mp-tile-container");
-            if (activeConfig.maxLegislators > 0) {
-                tiles = tiles.slice(0, activeConfig.maxLegislators);
+            if (cfg.maxLegislators > 0) {
+                tiles = tiles.slice(0, cfg.maxLegislators);
             }
             console.log(`Number of tiles to process: ${tiles.length}`);
             tiles.forEach(tile => {
@@ -207,10 +208,11 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
             let count = 0;
             let failures = 0;
             for (let [nameId, leg] of legislatorsByNameId) {
+                if (count % cfg.logEvery == 0) console.log(`fetchAndMergeDataFromContactLink: processed ${count} failures ${failures}...`);
                 await fetchAndMergeDataFromContactLink(leg);
-                if (count % 10 == 0) console.log(`fetchAndMergeDataFromContactLink: processed ${count} failures ${failures}...`);
-                await delay(activeConfig.delay);
+                await delay(cfg.delay);
             }
+            // Originally was going to do this in parallel but ran into issues with source shedding load
             // legislatorsByNameId.forEach((leg, nameId) => {
             // promises.push(await fetchAndMergeDataFromContactLink(leg);
             // });
@@ -272,7 +274,7 @@ export class CanadaGovernmentProvider implements GovernmentBuilderFactory {
                 if (cons !== undefined) {
                     cons.id = id;
                 } else {
-                    if (activeConfig.maxLegislators <= 0)
+                    if (cfg.maxLegislators <= 0)
                         console.warn(`NOT FOUND constituency ${name} with id: ${nameId}`);
                 }
             });
